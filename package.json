@@ -1,0 +1,38 @@
+{
+  "name": "crowd-sim",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "generate:results": "mkdir -p results/figures && npx tsx scripts/generate-results.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@napi-rs/canvas": "^1.0.0",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.10",
+    "tsx": "^4.18.1",
+    "typescript": "~5.5.0",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^5.4.0"
+  }
+}
