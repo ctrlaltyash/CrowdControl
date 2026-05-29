@@ -28,6 +28,7 @@ export class CrowdSimulator {
       risk: new Float64Array(N),
       vx: dir.vx,
       vy: dir.vy,
+      distanceToExit: dir.dist,
       cells: new Uint8Array(cells),
       params,
       stepCount: 0,
@@ -69,7 +70,7 @@ export class CrowdSimulator {
           this.state.running = false;
           break;
         }
-        
+
         const current = this.state.rho;
         const next = this.state.rhoPrev;
         stepDensityV3(current, next, this.state.vx, this.state.vy, this.state.cells, this.state.params);
@@ -79,20 +80,26 @@ export class CrowdSimulator {
 
         // ─── Analytics Pass (Every 20 steps) ───
         if (this.state.stepCount % 20 === 0) {
-          const newHazards = detectHazards(this.state.rho, this.state.vx, this.state.vy, this.state.rows, this.state.cols, this.state.params, this.state.stepCount);
-          
-          // Only add alerts if they are sufficiently far from existing active alerts
+          const newHazards = detectHazards(
+            this.state.rho,
+            this.state.vx,
+            this.state.vy,
+            this.state.rows,
+            this.state.cols,
+            this.state.params,
+            this.state.stepCount,
+          );
+
           const activeAlerts = this.state.alerts.filter(a => !a.mitigated);
           const filteredNew = newHazards.filter(nh => {
-              return !activeAlerts.some(ea => {
-                  const dr = ea.r - nh.r;
-                  const dc = ea.c - nh.c;
-                  return (dr * dr + dc * dc) < 64; // 8 cell radius
-              });
+            return !activeAlerts.some(ea => {
+              const dr = ea.r - nh.r;
+              const dc = ea.c - nh.c;
+              return dr * dr + dc * dc < 64;
+            });
           });
           this.state.alerts = [...filteredNew, ...this.state.alerts].slice(0, 15);
 
-          // ─── Mitigation Pass ───
           if (this.preventionMode) {
             const unmitigated = this.state.alerts.filter(a => !a.mitigated);
             const interventions = calculateIntervention(
@@ -105,28 +112,39 @@ export class CrowdSimulator {
               this.state.rho,
               { responsiveness: this.state.params.mitigationResponsiveness },
             );
-            
+
             if (interventions.length > 0) {
               for (const mod of interventions) {
                 this.state.cells[mod.r * this.state.cols + mod.c] = mod.type;
               }
-              // CRITICAL: Re-compute direction field so crowd reacts to new walls
+
               const dir = computeDirectionField(this.state.cells, this.state.rows, this.state.cols);
               this.state.vx = dir.vx;
               this.state.vy = dir.vy;
+              this.state.distanceToExit = dir.dist;
             }
           }
         }
       }
 
-      computeRiskV3(this.state.rho, this.state.vx, this.state.vy, this.state.risk, this.state.params);
+      computeRiskV3(
+        this.state.rho,
+        this.state.vx,
+        this.state.vy,
+        this.state.distanceToExit,
+        this.state.cells,
+        this.state.risk,
+        this.state.params,
+      );
 
       if (this.onUpdate) this.onUpdate(this.state);
-      if (this.state.running) this.animId = requestAnimationFrame(this.loop);
-      else if (this.onFinished) this.onFinished();
-
+      if (this.state.running) {
+        this.animId = requestAnimationFrame(this.loop);
+      } else if (this.onFinished) {
+        this.onFinished();
+      }
     } catch (err) {
-      console.error("Simulator Error:", err);
+      console.error('Simulator Error:', err);
       this.stop();
       if (this.onFinished) this.onFinished();
     }

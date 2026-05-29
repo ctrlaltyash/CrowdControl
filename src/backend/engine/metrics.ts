@@ -1,7 +1,3 @@
-/// This module provides functions to run the simulation and compute various metrics related to density, velocity, and risk over time. It includes a main function `runSimulationWithMetrics` that executes the simulation loop and collects metrics at each step, as well as final metrics at the end of the simulation.
-//  The metrics include maximum and mean density, velocity statistics, risk levels, and numerical properties like mass conservation error and runtime. The module also defines interfaces for the structure of these metrics, making it easy to analyze and visualize the results of different scenarios.
-
-
 import { SimParams, CellType } from './types';
 import { computeDirectionField } from './solver';
 import { stepDensityV3, computeRiskV3 } from './density';
@@ -78,19 +74,21 @@ export function runSimulationWithMetrics(
   options?: {
     riskThreshold?: number;
     stopWhenLowMass?: boolean;
+    initialDensity?: Float64Array;
   },
 ): SimulationMetrics {
   const N = rows * cols;
   const riskThreshold = options?.riskThreshold ?? DEFAULT_HIGH_RISK_THRESHOLD;
   const dir = computeDirectionField(cells, rows, cols);
 
-  let rho = new Float64Array(N);
+  let rho = options?.initialDensity ? new Float64Array(options.initialDensity) : new Float64Array(N);
   let rhoPrev = new Float64Array(N);
   const risk = new Float64Array(N);
   const vx = dir.vx.slice();
   const vy = dir.vy.slice();
+  const distanceToExit = dir.dist.slice();
 
-  const initialDensity = new Float64Array(rho);
+  const initialDensityState = new Float64Array(rho);
   const peakDensityPerStep: number[] = [];
   const meanRiskPerStep: number[] = [];
   const highRiskAreaPctPerStep: number[] = [];
@@ -107,18 +105,31 @@ export function runSimulationWithMetrics(
 
   const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-  const initialMass = Array.from(initialDensity).reduce((carry, value) => carry + value, 0);
+  const isActiveCell = (index: number) => cells[index] !== CellType.WALL && cells[index] !== CellType.MITIGATION;
+  const initialMass = Array.from(initialDensityState).reduce((carry, value) => carry + value, 0);
 
   for (let step = 1; step <= params.maxSteps; step += 1) {
     stepDensityV3(rho, rhoPrev, vx, vy, cells, params);
-    computeRiskV3(rhoPrev, vx, vy, risk, params);
+    computeRiskV3(rhoPrev, vx, vy, distanceToExit, cells, risk, params);
 
     const currentMaxDensity = Math.max(...rhoPrev);
-    const currentMeanDensity = Array.from(rhoPrev).reduce((sum, value) => sum + value, 0) / N;
-    const currentMeanRisk = Array.from(risk).reduce((sum, value) => sum + value, 0) / N;
-    const highRiskAreaCount = Array.from(risk).filter(value => value > riskThreshold).length;
-    const highRiskAreaPct = (highRiskAreaCount / N) * 100;
- 
+    let activeDensitySum = 0;
+    let activeRiskSum = 0;
+    let activeCount = 0;
+    let highRiskAreaCount = 0;
+
+    for (let i = 0; i < N; i += 1) {
+      if (!isActiveCell(i)) continue;
+      activeDensitySum += rhoPrev[i];
+      activeRiskSum += risk[i];
+      activeCount += 1;
+      if (risk[i] > riskThreshold) highRiskAreaCount += 1;
+    }
+
+    const currentMeanDensity = activeCount > 0 ? activeDensitySum / activeCount : 0;
+    const currentMeanRisk = activeCount > 0 ? activeRiskSum / activeCount : 0;
+    const highRiskAreaPct = activeCount > 0 ? (highRiskAreaCount / activeCount) * 100 : 0;
+
     peakDensityPerStep.push(currentMaxDensity);
     meanRiskPerStep.push(currentMeanRisk);
     highRiskAreaPctPerStep.push(highRiskAreaPct);
@@ -163,23 +174,45 @@ export function runSimulationWithMetrics(
   }
 
   const finalVelocityMagnitude = velocityMagnitude(vx, vy, cells);
-  const finalMeanVelocity = Array.from(finalVelocityMagnitude).reduce((sum, value) => sum + value, 0) / N;
-  const nonEmptyVelocities = Array.from(finalVelocityMagnitude).filter((value, index) => cells[index] !== CellType.WALL && cells[index] !== CellType.MITIGATION);
-  const finalMinVelocity = nonEmptyVelocities.length > 0 ? Math.min(...nonEmptyVelocities) : 0;
+  let finalVelocitySum = 0;
+  let finalVelocityCount = 0;
+  let finalMaxRisk = 0;
+  let finalRiskSum = 0;
+  let finalHighRiskCount = 0;
 
-  const finalMaxRisk = Math.max(...risk);
-  const finalMeanRisk = Array.from(risk).reduce((sum, value) => sum + value, 0) / N;
-  const finalHighRiskCount = Array.from(risk).filter(value => value > riskThreshold).length;
-  const finalHighRiskPct = (finalHighRiskCount / N) * 100;
+  for (let i = 0; i < N; i += 1) {
+    if (!isActiveCell(i)) continue;
+    finalVelocitySum += finalVelocityMagnitude[i];
+    finalVelocityCount += 1;
+    finalMaxRisk = Math.max(finalMaxRisk, risk[i]);
+    finalRiskSum += risk[i];
+    if (risk[i] > riskThreshold) finalHighRiskCount += 1;
+  }
+
+  const finalMeanVelocity = finalVelocityCount > 0 ? finalVelocitySum / finalVelocityCount : 0;
+  const finalMinVelocity = finalVelocityCount > 0
+    ? Array.from(finalVelocityMagnitude)
+        .filter((value, index) => isActiveCell(index))
+        .reduce((min, v) => Math.min(min, v), Infinity)
+    : 0;
+
+  const finalMeanRisk = finalVelocityCount > 0 ? finalRiskSum / finalVelocityCount : 0;
+  const finalHighRiskPct = finalVelocityCount > 0 ? (finalHighRiskCount / finalVelocityCount) * 100 : 0;
 
   const finalMass = Array.from(rho).reduce((carry, value) => carry + value, 0);
   const massConservationError = Math.abs(initialMass + totalEntryMass - totalExitMass - finalMass);
   const runtimeMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startTime;
 
+  const activeFinalCellCount = Array.from(cells).reduce((count, value, index) => {
+    return count + (isActiveCell(index) ? 1 : 0);
+  }, 0);
+
   const densityMetrics: DensityMetrics = {
     maxDensity: maxDensityOverTime,
     meanDensity: stepCount > 0 ? sumMeanDensity / stepCount : 0,
-    percentageAboveCrit: (Array.from(rho).filter(value => value > params.rhoCrit).length / N) * 100,
+    percentageAboveCrit: activeFinalCellCount > 0
+      ? (Array.from(rho).filter((value, index) => isActiveCell(index) && value > params.rhoCrit).length / activeFinalCellCount) * 100
+      : 0,
     firstStepAboveCrit,
   };
 
@@ -217,7 +250,7 @@ export function runSimulationWithMetrics(
       highRiskAreaPctPerStep,
       exitFlowRatePerStep,
     },
-    initialDensity,
+    initialDensity: initialDensityState,
     finalDensity: rho.slice(),
     finalRisk: risk.slice(),
     finalVelocityMagnitude,

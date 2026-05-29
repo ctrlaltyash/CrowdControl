@@ -14,14 +14,25 @@ const DEFAULT_PARAMS: SimParams = {
   rhoMax: 6, // Lowered to trigger effects earlier
   rhoCrit: 2.5, // Lowered to fill room faster
   spreadFactor: 0.1,
-  pushFactor: 2.0, // Increased push for room-filling effect
+  pushFactor: 2.0,
   minSpeedFactor: 0.01,
+  beta: 2.0,
+  pressureA: 10.0,
+  pressureK: 1.2,
+  pressureN: 3.0,
   entryRate: 80.0, // Total crowd inflow across all entries
   exitDrain: 0.35, // Restricted exit to cause pile-up
   renderEvery: 1,
   maxSteps: 10000,
   epsilon: 0.05,
+  diffusivity: 0.1,
+  riskAlpha: 0.8,
+  riskDelta: 0.4,
+  riskGamma: 0.25,
+  riskEta: 1.0,
+  riskNormalization: 2.5,
   riskWeight: 1.0,
+  mitigationResponsiveness: 1.0,
 };
 
 type DrawTool = 'wall' | 'entry' | 'exit' | 'erase';
@@ -46,6 +57,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'density' | 'risk'>('density');
   const [drawTool, setDrawTool] = useState<DrawTool>('wall');
   const [brushSize, setBrushSize] = useState(2);
+  const viewModes: Array<'density' | 'risk'> = ['density', 'risk'];
   const [editableCells, setEditableCells] = useState<Uint8Array>(() => {
     const scen = buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
     return new Uint8Array(scen.cells);
@@ -372,10 +384,10 @@ export default function App() {
           <section className="sidebar-section">
             <h2 className="section-title">Graph type</h2>
             <div className="scenario-btns">
-              {['density', 'risk'].map(mode => (
+              {viewModes.map(mode => (
                 <button
                   key={mode}
-                  onClick={() => setViewMode(mode as any)}
+                  onClick={() => setViewMode(mode)}
                   className={`cyber-btn ${viewMode === mode ? 'active' : ''}`}
                 >
                   {mode.toUpperCase()}

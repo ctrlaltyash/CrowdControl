@@ -1,6 +1,7 @@
 /* ─────────────────────────────────────────────────────────────
-   Direction Field V5 — Continuous Geodesic Gradient
-   Ensures smooth steering even in large open spaces.
+   Direction Field V6 — Harmonic Potential + Exact Gradient
+   Solves Laplace's equation over empty space and walls to produce
+   a smooth, physically consistent travel direction field.
    ───────────────────────────────────────────────────────────── */
 
 import { CellType } from './types';
@@ -17,11 +18,97 @@ export function computeDirectionField(
   cols: number,
 ): DirectionField {
   const N = rows * cols;
-  const dist = new Float64Array(N).fill(10000);
-  const queue: number[] = [];
   const idx = (r: number, c: number) => r * cols + c;
+  const phi = new Float64Array(N);
 
-  // 1. BFS to get raw distance
+  for (let i = 0; i < N; i++) {
+    phi[i] = cells[i] === CellType.EXIT ? 0 : 1;
+  }
+
+  const maxIters = 1200;
+  for (let iter = 0; iter < maxIters; iter++) {
+    let maxDelta = 0;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const i = idx(r, c);
+        if (cells[i] === CellType.EXIT || cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) {
+          continue;
+        }
+
+        let sum = 0;
+        let count = 0;
+
+        const neighbors = [
+          [r - 1, c],
+          [r + 1, c],
+          [r, c - 1],
+          [r, c + 1],
+        ];
+
+        for (const [nr, nc] of neighbors) {
+          if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+            sum += phi[i];
+          } else {
+            const ni = idx(nr, nc);
+            if (cells[ni] === CellType.WALL || cells[ni] === CellType.MITIGATION) {
+              sum += phi[i];
+            } else {
+              sum += phi[ni];
+            }
+          }
+          count += 1;
+        }
+
+        const nextPhi = sum / count;
+        maxDelta = Math.max(maxDelta, Math.abs(nextPhi - phi[i]));
+        phi[i] = nextPhi;
+      }
+    }
+
+    if (maxDelta < 1e-8) {
+      break;
+    }
+  }
+
+  const vx = new Float64Array(N);
+  const vy = new Float64Array(N);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = idx(r, c);
+      if (cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) continue;
+
+      const left = c > 0 ? idx(r, c - 1) : i;
+      const right = c < cols - 1 ? idx(r, c + 1) : i;
+      const up = r > 0 ? idx(r - 1, c) : i;
+      const down = r < rows - 1 ? idx(r + 1, c) : i;
+
+      const phiLeft = (c > 0 && cells[left] !== CellType.WALL && cells[left] !== CellType.MITIGATION)
+        ? phi[left]
+        : phi[i];
+      const phiRight = (c < cols - 1 && cells[right] !== CellType.WALL && cells[right] !== CellType.MITIGATION)
+        ? phi[right]
+        : phi[i];
+      const phiUp = (r > 0 && cells[up] !== CellType.WALL && cells[up] !== CellType.MITIGATION)
+        ? phi[up]
+        : phi[i];
+      const phiDown = (r < rows - 1 && cells[down] !== CellType.WALL && cells[down] !== CellType.MITIGATION)
+        ? phi[down]
+        : phi[i];
+
+      const gx = -(phiRight - phiLeft) * 0.5;
+      const gy = -(phiDown - phiUp) * 0.5;
+      const length = Math.hypot(gx, gy);
+      if (length > 1e-8) {
+        vx[i] = gx / length;
+        vy[i] = gy / length;
+      }
+    }
+  }
+
+  const dist = new Float64Array(N).fill(1e9);
+  const queue: number[] = [];
   for (let i = 0; i < N; i++) {
     if (cells[i] === CellType.EXIT) {
       dist[i] = 0;
@@ -51,49 +138,5 @@ export function computeDirectionField(
     }
   }
 
-  // 2. Multi-pass smoothing to ensure continuous gradients
-  const smoothed = new Float64Array(dist);
-  for (let p = 0; p < 8; p++) {
-    for (let r = 1; r < rows - 1; r++) {
-      for (let c = 1; c < cols - 1; c++) {
-        const i = idx(r, c);
-        if (cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION || dist[i] === 0) continue;
-        
-        let sum = 0; let count = 0;
-        const neighbors = [i-1, i+1, i-cols, i+cols];
-        for (const ni of neighbors) {
-            if (cells[ni] !== CellType.WALL && cells[ni] !== CellType.MITIGATION && dist[ni] < 10000) {
-                sum += smoothed[ni];
-                count++;
-            }
-        }
-        if (count > 0) {
-            smoothed[i] = (smoothed[i] + sum / count) / 2;
-        }
-      }
-    }
-  }
-
-  // 3. Compute Unit Vectors from Gradient
-  const vx = new Float64Array(N);
-  const vy = new Float64Array(N);
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const i = idx(r, c);
-      if (cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) continue;
-
-      let dx = 0; let dy = 0;
-      if (c > 0 && c < cols - 1) dx = smoothed[i - 1] - smoothed[i + 1];
-      if (r > 0 && r < rows - 1) dy = smoothed[i - cols] - smoothed[i + cols];
-
-      const len = Math.sqrt(dx * dx + dy * dy);
-      if (len > 0.0001) {
-        vx[i] = dx / len;
-        vy[i] = dy / len;
-      }
-    }
-  }
-
-  return { vx, vy, dist: smoothed };
+  return { vx, vy, dist };
 }

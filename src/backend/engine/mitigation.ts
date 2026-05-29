@@ -516,13 +516,15 @@ function hasMitigationNearby(
   rows: number,
   cols: number,
   radius = 2,
+  pending?: Set<number>,
 ): boolean {
   for (let dr = -radius; dr <= radius; dr++) {
     for (let dc = -radius; dc <= radius; dc++) {
       const rr = r + dr;
       const cc = c + dc;
       if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
-      if (cells[idx(rr, cc, cols)] === CellType.MITIGATION) return true;
+      const k = idx(rr, cc, cols);
+      if (cells[k] === CellType.MITIGATION || pending?.has(k)) return true;
     }
   }
   return false;
@@ -629,7 +631,7 @@ export function calculateIntervention(
 
   for (const hazard of prioritizedHazards) {
     const beforeCount = modifications.length;
-    if (hasMitigationNearby(cells, hazard.r, hazard.c, rows, cols, tuning.cooldownRadius)) {
+    if (hasMitigationNearby(cells, hazard.r, hazard.c, rows, cols, tuning.cooldownRadius, pending)) {
       hazard.mitigated = true;
       continue;
     }

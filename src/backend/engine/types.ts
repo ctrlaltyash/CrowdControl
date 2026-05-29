@@ -21,11 +21,21 @@ export interface SimParams {
   spreadFactor: number;
   pushFactor: number;
   minSpeedFactor: number;
+  beta: number;
+  pressureA: number;
+  pressureK: number;
+  pressureN: number;
   entryRate: number;
   exitDrain: number;
   renderEvery: number;
   maxSteps: number;
   epsilon: number;
+  diffusivity: number;
+  riskAlpha: number;
+  riskDelta: number;
+  riskGamma: number;
+  riskEta: number;
+  riskNormalization: number;
   /** V2: Turbulence/Risk factor */
   riskWeight: number;
   /** AI mitigation responsiveness: 0=passive, 1=balanced, 2=aggressive */
@@ -53,6 +63,7 @@ export interface SimulatorState {
   risk: Float64Array;
   vx: Float64Array;
   vy: Float64Array;
+  distanceToExit: Float64Array;
   cells: Uint8Array;
   params: SimParams;
   stepCount: number;
