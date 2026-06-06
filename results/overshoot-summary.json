@@ -1,0 +1,33 @@
+{
+  "firstStepWithOvershoot": 834,
+  "lastStepWithOvershoot": 10000,
+  "uniqueCounts": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    10,
+    11,
+    12,
+    14,
+    16,
+    18,
+    19,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26
+  ],
+  "totalSteps": 10000,
+  "stepsAt100": 8190,
+  "max": 100,
+  "min": 0,
+  "total": 903813,
+  "totalMagnitude": 3065731.9938647673,
+  "maxMagnitude": 4.198474106979102
+}

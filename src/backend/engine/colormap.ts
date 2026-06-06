@@ -10,6 +10,8 @@ type HeatmapCache = {
   gridCanvas: HTMLCanvasElement;
   gridCtx: CanvasRenderingContext2D;
   imageData: ImageData;
+  cellField: Float32Array;
+  cellSpeed: Float32Array;
   field: Float32Array;
   speedField: Float32Array;
   scratchField: Float32Array;
@@ -20,6 +22,9 @@ type HeatmapCache = {
 };
 
 const heatmapCache = new WeakMap<CanvasRenderingContext2D, HeatmapCache>();
+const MAX_RENDER_SCALE = 4;
+const TARGET_SCREEN_PIXELS_PER_TEXEL = 2.5;
+const VISIBILITY_FLOOR = 0.012;
 
 const SPECTRAL_STOPS: RGB[] = [
   [5, 15, 35],
@@ -29,9 +34,6 @@ const SPECTRAL_STOPS: RGB[] = [
   [220, 40, 40],
 ];
 
-// THis is the linear interpolation (LERP) function for the color stops,
-//  it takes a value t between 0 and 1 and returns an RGB color by blending between the defined stops. The applyVelocityTint function then adds a velocity-based boost to the color, making faster-moving areas appear brighter. The densityToRGBAFluid and riskToRGBAFluid functions convert density and risk values into RGBA colors, applying both the color mapping and velocity tinting, as well as dynamically adjusting the alpha transparency based on the intensity of the value. Finally, the renderHeatmapFluid function renders the heatmap onto a canvas by first blurring the density and speed fields for smoother visualization, then mapping each pixel to its corresponding RGBA color based on either density or risk mode.
-// lmao the AI autofill goes insane, imma use this for explain the code
 function sampleStops(stops: RGB[], t: number): RGB {
   const n = stops.length - 1;
   const scaled = Math.max(0, Math.min(1, t)) * n;
@@ -57,32 +59,34 @@ function applyVelocityTint(rgb: RGB, v: number): RGB {
 }
 
 export function densityToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
-  if (t <= 0) return [0, 0, 0, 0];
+  if (t <= VISIBILITY_FLOOR) return [0, 0, 0, 0];
   const colorIdx = Math.max(0, Math.min(1, t));
   const baseColor = sampleStops(SPECTRAL_STOPS, colorIdx);
   const [r, g, b] = applyVelocityTint(baseColor, v);
-  const dynamicAlpha = Math.round(130 + 125 * Math.pow(colorIdx, 1.05));
+  const opacityT = Math.max(0, Math.min(1, (colorIdx - VISIBILITY_FLOOR) / (1 - VISIBILITY_FLOOR)));
+  const dynamicAlpha = Math.round(28 + 227 * Math.pow(opacityT, 0.9));
   const blendedAlpha = Math.round((dynamicAlpha * alpha) / 255);
   return [Math.round(r), Math.round(g), Math.round(b), Math.min(255, blendedAlpha)];
 }
 
 export function riskToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
-  if (t <= 0) return [0, 0, 0, 0];
-  const colorIdx = Math.max(0, Math.min(1, t));
+  const colorIdx = Math.max(0, Math.min(1, Math.pow(t, 0.75) * 1.4));
+  if (colorIdx <= 0.002) return [0, 0, 0, 0];
   const [r, g, b] = sampleStops([
-    [60, 70, 110],
-    [0, 150, 230],
-    [255, 190, 90],
-    [245, 100, 45],
-    [230, 35, 35],
+    [50, 60, 100],
+    [30, 140, 210],
+    [245, 150, 50],
+    [220, 80, 40],
+    [200, 25, 25],
   ], colorIdx);
   const velocityBoost = Math.min(1, v * 2);
   const boosted: RGB = [
-    Math.min(255, r + velocityBoost * 30),
-    Math.min(255, g + velocityBoost * 20),
-    Math.min(255, b + velocityBoost * 20),
+    Math.min(255, r + velocityBoost * 40),
+    Math.min(255, g + velocityBoost * 30),
+    Math.min(255, b + velocityBoost * 25),
   ];
-  const dynamicAlpha = Math.round(140 + 115 * Math.pow(colorIdx, 1.2));
+  const opacityT = Math.max(0, Math.min(1, colorIdx));
+  const dynamicAlpha = Math.round(64 + 190 * Math.pow(opacityT, 0.7));
   const blendedAlpha = Math.round((dynamicAlpha * alpha) / 255);
   return [Math.round(boosted[0]), Math.round(boosted[1]), Math.round(boosted[2]), Math.min(255, blendedAlpha)];
 }
@@ -99,22 +103,28 @@ export function renderHeatmapFluid(
   canvasH: number,
   mode: 'density' | 'risk',
 ): void {
-  const renderScale = 1;
+  const renderScale = chooseRenderScale(rows, cols, canvasW, canvasH);
   const renderCols = cols * renderScale;
   const renderRows = rows * renderScale;
   const cache = getHeatmapCache(ctx, rows, cols, renderScale);
 
   const pixels = cache.imageData.data;
+  const cellField = cache.cellField;
+  const cellSpeed = cache.cellSpeed;
   const field = cache.field;
   const speedField = cache.speedField;
 
   for (let i = 0; i < rows * cols; i++) {
-    field[i] = mode === 'risk' ? risk[i] : rho[i];
-    speedField[i] = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
+    cellField[i] = mode === 'risk' ? risk[i] : rho[i];
+    cellSpeed[i] = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
   }
 
-  blurField(field, cache.scratchField, renderCols, renderRows);
-  blurField(speedField, cache.scratchSpeed, renderCols, renderRows);
+  upsampleField(cellField, field, rows, cols, renderScale);
+  upsampleField(cellSpeed, speedField, rows, cols, renderScale);
+
+  const blurRadius = Math.max(2, Math.round(renderScale * 1.25));
+  blurField(field, cache.scratchField, renderCols, renderRows, blurRadius);
+  blurField(speedField, cache.scratchSpeed, renderCols, renderRows, blurRadius);
 
   const totalPixels = renderCols * renderRows;
   for (let idx = 0; idx < totalPixels; idx++) {
@@ -137,19 +147,70 @@ export function renderHeatmapFluid(
   ctx.drawImage(cache.gridCanvas, 0, 0, canvasW, canvasH);
 }
 
-function blurField(field: Float32Array, scratch: Float32Array, width: number, height: number) {
+function chooseRenderScale(rows: number, cols: number, canvasW: number, canvasH: number): number {
+  const cellPixelSize = Math.max(
+    canvasW / Math.max(1, cols),
+    canvasH / Math.max(1, rows),
+  );
+  return Math.max(1, Math.min(MAX_RENDER_SCALE, Math.ceil(cellPixelSize / TARGET_SCREEN_PIXELS_PER_TEXEL)));
+}
+
+function upsampleField(
+  source: Float32Array,
+  dest: Float32Array,
+  rows: number,
+  cols: number,
+  scale: number,
+) {
+  if (scale === 1) {
+    dest.set(source);
+    return;
+  }
+
+  const width = cols * scale;
+  const height = rows * scale;
+
+  for (let y = 0; y < height; y++) {
+    const sourceY = Math.max(0, Math.min(rows - 1, (y + 0.5) / scale - 0.5));
+    const y0 = Math.floor(sourceY);
+    const y1 = Math.min(rows - 1, y0 + 1);
+    const wy = sourceY - y0;
+    const row0 = y0 * cols;
+    const row1 = y1 * cols;
+
+    for (let x = 0; x < width; x++) {
+      const sourceX = Math.max(0, Math.min(cols - 1, (x + 0.5) / scale - 0.5));
+      const x0 = Math.floor(sourceX);
+      const x1 = Math.min(cols - 1, x0 + 1);
+      const wx = sourceX - x0;
+
+      const a = source[row0 + x0] * (1 - wx) + source[row0 + x1] * wx;
+      const b = source[row1 + x0] * (1 - wx) + source[row1 + x1] * wx;
+      dest[y * width + x] = a * (1 - wy) + b * wy;
+    }
+  }
+}
+
+function blurField(
+  field: Float32Array,
+  scratch: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+) {
   scratch.set(field);
-  const kernel = [0.0625, 0.25, 0.375, 0.25, 0.0625];
+  const kernel = createGaussianKernel(radius);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       let sum = 0;
       let weight = 0;
-      for (let k = -2; k <= 2; k++) {
+      for (let k = -radius; k <= radius; k++) {
         const nx = x + k;
         if (nx < 0 || nx >= width) continue;
-        sum += scratch[y * width + nx] * kernel[k + 2];
-        weight += kernel[k + 2];
+        const kernelWeight = kernel[k + radius];
+        sum += scratch[y * width + nx] * kernelWeight;
+        weight += kernelWeight;
       }
       field[y * width + x] = sum / weight;
     }
@@ -160,15 +221,27 @@ function blurField(field: Float32Array, scratch: Float32Array, width: number, he
     for (let x = 0; x < width; x++) {
       let sum = 0;
       let weight = 0;
-      for (let k = -2; k <= 2; k++) {
+      for (let k = -radius; k <= radius; k++) {
         const ny = y + k;
         if (ny < 0 || ny >= height) continue;
-        sum += scratch[ny * width + x] * kernel[k + 2];
-        weight += kernel[k + 2];
+        const kernelWeight = kernel[k + radius];
+        sum += scratch[ny * width + x] * kernelWeight;
+        weight += kernelWeight;
       }
       field[y * width + x] = sum / weight;
     }
   }
+}
+
+function createGaussianKernel(radius: number): number[] {
+  const sigma = Math.max(1, radius / 2);
+  const kernel: number[] = [];
+
+  for (let k = -radius; k <= radius; k++) {
+    kernel.push(Math.exp(-(k * k) / (2 * sigma * sigma)));
+  }
+
+  return kernel;
 }
 
 function getHeatmapCache(
@@ -185,11 +258,14 @@ function getHeatmapCache(
   const gridCtx = gridCanvas.getContext('2d')!;
   const imageData = gridCtx.createImageData(cols * renderScale, rows * renderScale);
   const size = cols * renderScale * rows * renderScale;
+  const cellCount = rows * cols;
 
   const next: HeatmapCache = {
     gridCanvas,
     gridCtx,
     imageData,
+    cellField: new Float32Array(cellCount),
+    cellSpeed: new Float32Array(cellCount),
     field: new Float32Array(size),
     speedField: new Float32Array(size),
     scratchField: new Float32Array(size),

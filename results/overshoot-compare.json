@@ -1,0 +1,71 @@
+[
+  {
+    "label": "default",
+    "densityMetrics": {
+      "maxDensity": 6,
+      "meanDensity": 0.27708161170866963,
+      "percentageAboveCrit": 1.0726161106939827,
+      "firstStepAboveCrit": 819
+    },
+    "densityDiagnostics": {
+      "totalOvershootCount": 3587754,
+      "totalOvershootMagnitude": 2958581.383631854,
+      "maxOvershootMagnitude": 1.0101855339581363,
+      "stepsAt100": 9133,
+      "firstStepWithOvershoot": 832
+    },
+    "numericalMetrics": {
+      "massConservationError": 2534.334707391401,
+      "runtimeMs": 96250.422198,
+      "rows": 100,
+      "cols": 100,
+      "numTimesteps": 10000
+    }
+  },
+  {
+    "label": "dt-0.02",
+    "densityMetrics": {
+      "maxDensity": 6,
+      "meanDensity": 0.2661917567276829,
+      "percentageAboveCrit": 1.0726161106939827,
+      "firstStepAboveCrit": 1637
+    },
+    "densityDiagnostics": {
+      "totalOvershootCount": 1587856,
+      "totalOvershootMagnitude": 1306853.1299672748,
+      "maxOvershootMagnitude": 1.0100874982550536,
+      "stepsAt100": 8218,
+      "firstStepWithOvershoot": 1663
+    },
+    "numericalMetrics": {
+      "massConservationError": 2534.3645758887064,
+      "runtimeMs": 44223.131498,
+      "rows": 100,
+      "cols": 100,
+      "numTimesteps": 10000
+    }
+  },
+  {
+    "label": "dt-0.01",
+    "densityMetrics": {
+      "maxDensity": 6,
+      "meanDensity": 0.24368322095884937,
+      "percentageAboveCrit": 1.0297114662662235,
+      "firstStepAboveCrit": 3273
+    },
+    "densityDiagnostics": {
+      "totalOvershootCount": 590231,
+      "totalOvershootMagnitude": 483195.56553355884,
+      "maxOvershootMagnitude": 1.000523123003621,
+      "stepsAt100": 0,
+      "firstStepWithOvershoot": 3324
+    },
+    "numericalMetrics": {
+      "massConservationError": 2565.088491190355,
+      "runtimeMs": 27250.218111000024,
+      "rows": 100,
+      "cols": 100,
+      "numTimesteps": 10000
+    }
+  }
+]

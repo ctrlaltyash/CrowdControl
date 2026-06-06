@@ -377,8 +377,11 @@ function keepsEntryReachable(
   rows: number,
   cols: number,
   pending: Set<number>,
+  totalEntries: number,
   candidate: number,
 ): boolean {
+  if (totalEntries <= 0) return true;
+
   const queue: number[] = [];
   const seen = new Uint8Array(rows * cols);
 
@@ -391,12 +394,7 @@ function keepsEntryReachable(
   if (queue.length === 0) return true;
 
   let reachableEntries = 0;
-  let totalEntries = 0;
-  for (let i = 0; i < cells.length; i++) {
-    if (cells[i] === CellType.ENTRY) totalEntries++;
-  }
-  if (totalEntries === 0) return true;
-
+  
   let head = 0;
   while (head < queue.length) {
     const cur = queue[head++];
@@ -427,6 +425,7 @@ function canPlaceMitigation(
   rows: number,
   cols: number,
   pending: Set<number>,
+  totalEntries: number,
   tuning: MitigationTuning,
 ): boolean {
   if (r < 0 || r >= rows || c < 0 || c >= cols) return false;
@@ -437,7 +436,7 @@ function canPlaceMitigation(
   if (nearestCellTypeDistance(cells, r, c, rows, cols, CellType.ENTRY, SAFE_ENTRY_RADIUS) <= SAFE_ENTRY_RADIUS) return false;
   if (countBlockedCardinalNeighbors(cells, r, c, rows, cols, pending) >= 3) return false;
   if (wouldCreateSolidBlock(cells, r, c, rows, cols, pending)) return false;
-  return keepsEntryReachable(cells, rows, cols, pending, k);
+  return keepsEntryReachable(cells, rows, cols, pending, totalEntries, k);
 }
 
 function placeDeflectorLine(
@@ -619,10 +618,15 @@ export function calculateIntervention(
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, tuning.maxHazardsPerPass);
 
+  let totalEntries = 0;
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i] === CellType.ENTRY) totalEntries++;
+  }
+
   const addMod = (m: Intervention, hazardStartCount: number): boolean => {
     if (modifications.length >= tuning.maxInterventionsPerPass) return false;
     if (modifications.length - hazardStartCount >= tuning.maxInterventionsPerHazard) return false;
-    if (!canPlaceMitigation(cells, m.r, m.c, rows, cols, pending, tuning)) return false;
+    if (!canPlaceMitigation(cells, m.r, m.c, rows, cols, pending, totalEntries, tuning)) return false;
     const key = idx(m.r, m.c, cols);
     pending.add(key);
     modifications.push(m);

@@ -1,18 +1,29 @@
 /* ─────────────────────────────────────────────────────────────
-   StampedePredictor V6 — Safety Analytics & AI Prevention
+   CrowdSim Premium Frontend — Elite Safety Analytics Platform
    ───────────────────────────────────────────────────────────── */
 
 import { useRef, useEffect, useState, useCallback, type PointerEvent } from 'react';
+import gsap from 'gsap';
 import { renderHeatmapFluid } from '../backend/engine/colormap';
 import { buildBottleneckScenario, buildStadiumScenario } from '../backend/engine/scenarios';
 import { CellType, SimParams, SimStatus, SimulatorState, HazardAlert } from '../backend/engine/types';
 import { CrowdSimulator } from '../backend/engine/simulator';
+import {
+  Header,
+  Sidebar,
+  Hero,
+  FormulaShowcase,
+  AnalyticsCards,
+  AlertsPanel,
+  SimulationCanvas,
+} from './components';
 
 const DEFAULT_PARAMS: SimParams = {
-  rows: 100, cols: 100,
+  rows: 100,
+  cols: 100,
   dt: 0.04,
-  rhoMax: 6, // Lowered to trigger effects earlier
-  rhoCrit: 2.5, // Lowered to fill room faster
+  rhoMax: 6,
+  rhoCrit: 2,
   spreadFactor: 0.1,
   pushFactor: 2.0,
   minSpeedFactor: 0.01,
@@ -20,8 +31,8 @@ const DEFAULT_PARAMS: SimParams = {
   pressureA: 10.0,
   pressureK: 1.2,
   pressureN: 3.0,
-  entryRate: 80.0, // Total crowd inflow across all entries
-  exitDrain: 0.35, // Restricted exit to cause pile-up
+  entryRate: 80.0,
+  exitDrain: 0.35,
   renderEvery: 1,
   maxSteps: 10000,
   epsilon: 0.05,
@@ -45,9 +56,10 @@ const DRAW_TOOL_TO_CELL: Record<DrawTool, CellType> = {
 };
 
 export default function App() {
-  const liveCanvasRef = useRef<HTMLCanvasElement>(null);
+  const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const bgCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const isDrawingRef = useRef(false);
+  const simulatorRef = useRef<CrowdSimulator | null>(null);
+  const startTimeRef = useRef<number>(0);
   const editableCellsRef = useRef<Uint8Array | null>(null);
   const [status, setStatus] = useState<SimStatus>('idle');
   const [step, setStep] = useState(0);
@@ -57,20 +69,33 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'density' | 'risk'>('density');
   const [drawTool, setDrawTool] = useState<DrawTool>('wall');
   const [brushSize, setBrushSize] = useState(2);
-  const viewModes: Array<'density' | 'risk'> = ['density', 'risk'];
+  const [gridSize, setGridSize] = useState(100);
+  const [fps, setFps] = useState(60);
+  const [entryRate, setEntryRate] = useState(DEFAULT_PARAMS.entryRate);
+  const [pressureFactor, setPressureFactor] = useState(DEFAULT_PARAMS.pushFactor);
+  const [exitDrain, setExitDrain] = useState(DEFAULT_PARAMS.exitDrain);
+  const [scenario, setScenario] = useState<'bottleneck' | 'stadium'>('bottleneck');
+  const [activeSection, setActiveSection] = useState<string>('canvas');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const appRef = useRef<HTMLDivElement>(null);
+  const viewModeRef = useRef(viewMode);
+
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
+
+  const rows = gridSize;
+  const cols = gridSize;
+
+  const createCells = (size: number) => new Uint8Array(size * size);
   const [editableCells, setEditableCells] = useState<Uint8Array>(() => {
-    const scen = buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
+    const scen = buildBottleneckScenario(gridSize, gridSize);
     return new Uint8Array(scen.cells);
   });
 
-  const [entryRate, setEntryRate] = useState(DEFAULT_PARAMS.entryRate);
-  const [scenario, setScenario] = useState<'bottleneck' | 'stadium'>('bottleneck');
-
-  const simulatorRef = useRef<CrowdSimulator | null>(null);
-  const startTimeRef = useRef(0);
-  const viewModeRef = useRef(viewMode);
-  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
-  useEffect(() => { editableCellsRef.current = editableCells; }, [editableCells]);
+  useEffect(() => {
+    editableCellsRef.current = editableCells;
+  }, [editableCells]);
 
   const renderCellsPreview = useCallback((cells: Uint8Array, rows: number, cols: number) => {
     const canvas = liveCanvasRef.current;
@@ -92,10 +117,10 @@ export default function App() {
           ctx.fillStyle = '#1e293b';
           ctx.fillRect(c * csx, r * csy, csx + 1, csy + 1);
         } else if (cell === CellType.ENTRY) {
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.65)';
+          ctx.fillStyle = 'rgba(0, 217, 255, 0.4)';
           ctx.fillRect(c * csx, r * csy, csx, csy);
         } else if (cell === CellType.EXIT) {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.75)';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.45)';
           ctx.fillRect(c * csx, r * csy, csx, csy);
         } else if (cell === CellType.MITIGATION) {
           ctx.fillStyle = '#f59e0b';
@@ -125,9 +150,11 @@ export default function App() {
 
   const prepareBackground = useCallback((cells: Uint8Array, rows: number, cols: number) => {
     const bg = document.createElement('canvas');
-    bg.width = 10000; bg.height = 10000;
+    bg.width = 10000;
+    bg.height = 10000;
     const ctx = bg.getContext('2d')!;
-    const csx = bg.width / cols; const csy = bg.height / rows;
+    const csx = bg.width / cols;
+    const csy = bg.height / rows;
 
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, bg.width, bg.height);
@@ -139,66 +166,78 @@ export default function App() {
           ctx.fillStyle = '#1e293b';
           ctx.fillRect(c * csx, r * csy, csx + 1, csy + 1);
         } else if (cell === CellType.ENTRY) {
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.28)';
+          ctx.fillStyle = 'rgba(0, 217, 255, 0.18)';
           ctx.fillRect(c * csx, r * csy, csx, csy);
         } else if (cell === CellType.EXIT) {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.34)';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
           ctx.fillRect(c * csx, r * csy, csx, csy);
         }
       }
     }
+
     bgCanvasRef.current = bg;
   }, []);
 
-  const loadScenario = useCallback((nextScenario: 'bottleneck' | 'stadium') => {
-    if (status === 'running' || status === 'initializing') return;
-    const scen = nextScenario === 'bottleneck'
-      ? buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols)
-      : buildStadiumScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
-    const nextCells = new Uint8Array(scen.cells);
-    setScenario(nextScenario);
-    setEditableCells(nextCells);
-    setAlerts([]);
-    setStep(0);
-    setElapsed(0);
-    prepareBackground(nextCells, scen.rows, scen.cols);
-    requestAnimationFrame(() => renderCellsPreview(nextCells, scen.rows, scen.cols));
-  }, [prepareBackground, renderCellsPreview, status]);
+  const loadScenario = useCallback(
+    (nextScenario: 'bottleneck' | 'stadium') => {
+      if (status === 'running' || status === 'initializing') return;
+      const scen = nextScenario === 'bottleneck'
+        ? buildBottleneckScenario(rows, cols)
+        : buildStadiumScenario(rows, cols);
+      const nextCells = new Uint8Array(scen.cells);
+      setScenario(nextScenario);
+      setEditableCells(nextCells);
+      setAlerts([]);
+      setStep(0);
+      setElapsed(0);
+      prepareBackground(nextCells, scen.rows, scen.cols);
+      requestAnimationFrame(() => renderCellsPreview(nextCells, scen.rows, scen.cols));
+    },
+    [prepareBackground, renderCellsPreview, rows, cols, status]
+  );
 
-  const paintCell = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
-    if (status === 'running' || status === 'initializing') return;
-    const canvas = liveCanvasRef.current;
-    if (!canvas) return;
+  const paintCell = useCallback(
+    (event: PointerEvent<HTMLCanvasElement>) => {
+      if (status === 'running' || status === 'initializing') return;
+      const canvas = liveCanvasRef.current;
+      if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const c = Math.floor(((event.clientX - rect.left) / rect.width) * DEFAULT_PARAMS.cols);
-    const r = Math.floor(((event.clientY - rect.top) / rect.height) * DEFAULT_PARAMS.rows);
-    if (r < 0 || r >= DEFAULT_PARAMS.rows || c < 0 || c >= DEFAULT_PARAMS.cols) return;
+      const rect = canvas.getBoundingClientRect();
+      const c = Math.floor(((event.clientX - rect.left) / rect.width) * cols);
+      const r = Math.floor(((event.clientY - rect.top) / rect.height) * rows);
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return;
 
-    const radius = Math.max(0, brushSize - 1);
-    const nextCells = new Uint8Array(editableCellsRef.current ?? editableCells);
-    const targetCell = DRAW_TOOL_TO_CELL[drawTool];
+      const radius = Math.max(0, brushSize - 1);
+      const nextCells = new Uint8Array(editableCellsRef.current ?? editableCells);
+      const targetCell = DRAW_TOOL_TO_CELL[drawTool];
 
-    for (let dr = -radius; dr <= radius; dr++) {
-      for (let dc = -radius; dc <= radius; dc++) {
-        if (dr * dr + dc * dc > radius * radius + 0.5) continue;
-        const rr = r + dr;
-        const cc = c + dc;
-        if (rr < 0 || rr >= DEFAULT_PARAMS.rows || cc < 0 || cc >= DEFAULT_PARAMS.cols) continue;
-        nextCells[rr * DEFAULT_PARAMS.cols + cc] = targetCell;
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          if (dr * dr + dc * dc > radius * radius + 0.5) continue;
+          const rr = r + dr;
+          const cc = c + dc;
+          if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
+          nextCells[rr * cols + cc] = targetCell;
+        }
       }
-    }
 
-    editableCellsRef.current = nextCells;
-    setEditableCells(nextCells);
-    renderCellsPreview(nextCells, DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
-  }, [brushSize, drawTool, editableCells, renderCellsPreview, status]);
+      editableCellsRef.current = nextCells;
+      setEditableCells(nextCells);
+      renderCellsPreview(nextCells, rows, cols);
+    },
+    [brushSize, drawTool, editableCells, renderCellsPreview, status, rows, cols]
+  );
 
   useEffect(() => {
     if (status === 'running' || status === 'initializing') return;
-    prepareBackground(editableCells, DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
-    renderCellsPreview(editableCells, DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
-  }, [editableCells, prepareBackground, renderCellsPreview, status]);
+    prepareBackground(editableCells, rows, cols);
+    renderCellsPreview(editableCells, rows, cols);
+  }, [editableCells, prepareBackground, renderCellsPreview, status, rows, cols]);
+
+  useEffect(() => {
+    if (status === 'running' || status === 'initializing') return;
+    loadScenario(scenario);
+  }, [gridSize, loadScenario, scenario, status]);
 
   const handleSimUpdate = useCallback((state: SimulatorState) => {
     const canvas = liveCanvasRef.current;
@@ -206,7 +245,7 @@ export default function App() {
 
     const ctx = canvas.getContext('2d')!;
     const { rho, vx, vy, rows, cols, params, cells, stepCount, alerts } = state;
-    
+
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(bgCanvasRef.current, 0, 0, canvas.width, canvas.height);
@@ -235,20 +274,21 @@ export default function App() {
     const csx = canvas.width / cols;
     const csy = canvas.height / rows;
     for (let i = 0; i < cells.length; i++) {
-        if (cells[i] === CellType.MITIGATION) {
-            const r = Math.floor(i / cols); const c = i % cols;
-            ctx.fillStyle = '#f59e0b'; // Distinct Orange for AI barriers
-            ctx.fillRect(c * csx, r * csy, csx + 1, csy + 1);
-        }
+      if (cells[i] === CellType.MITIGATION) {
+        const r = Math.floor(i / cols);
+        const c = i % cols;
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(c * csx, r * csy, csx + 1, csy + 1);
+      }
     }
 
     for (const alert of alerts) {
-        ctx.strokeStyle = '#ff0000';
-        ctx.lineWidth = 2;
-        const ax = alert.c * csx;
-        const ay = alert.r * csy;
-        const size = 40 * alert.intensity;
-        ctx.strokeRect(ax - size/2, ay - size/2, size, size);
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 2;
+      const ax = alert.c * csx;
+      const ay = alert.r * csy;
+      const size = 40 * alert.intensity;
+      ctx.strokeRect(ax - size / 2, ay - size / 2, size, size);
     }
 
     setStep(stepCount);
@@ -259,7 +299,15 @@ export default function App() {
   const handleStart = async () => {
     if (status === 'running') return;
     setStatus('initializing');
-    const params = { ...DEFAULT_PARAMS, entryRate };
+    const params = {
+      ...DEFAULT_PARAMS,
+      rows,
+      cols,
+      entryRate,
+      exitDrain,
+      pushFactor: pressureFactor,
+      renderEvery: Math.max(1, Math.round(60 / fps)),
+    };
     const simCells = new Uint8Array(editableCells);
     const sim = new CrowdSimulator(params, simCells, params.rows, params.cols);
     sim.preventionMode = preventionEnabled;
@@ -271,208 +319,223 @@ export default function App() {
     sim.start();
   };
 
-  const handleStop = () => { simulatorRef.current?.stop(); setStatus('stopped'); };
-  const handleReset = () => { simulatorRef.current?.stop(); simulatorRef.current = null; setStatus('idle'); setStep(0); setElapsed(0); setAlerts([]); };
+  const handleStop = () => {
+    simulatorRef.current?.stop();
+    setStatus('stopped');
+  };
+
+  const handleReset = () => {
+    simulatorRef.current?.stop();
+    simulatorRef.current = null;
+    setStatus('idle');
+    setStep(0);
+    setElapsed(0);
+    setAlerts([]);
+  };
+
   const handleClearLayout = () => {
     if (status === 'running' || status === 'initializing') return;
-    const cells = new Uint8Array(DEFAULT_PARAMS.rows * DEFAULT_PARAMS.cols);
+    const cells = createCells(rows);
     setEditableCells(cells);
     setAlerts([]);
     setStep(0);
     setElapsed(0);
   };
 
+  useEffect(() => {
+    if (!appRef.current) return;
+    const header = appRef.current.querySelector('[data-header]') as HTMLElement;
+    const sidebar = appRef.current.querySelector('[data-sidebar]') as HTMLElement;
+    const cards = appRef.current.querySelectorAll('[data-sidebar-card]');
+    const mainCanvas = appRef.current.querySelector('[data-canvas-panel]') as HTMLElement;
+
+    const timeline = gsap.timeline();
+
+    timeline
+      .from(header, { y: -100, opacity: 0, duration: 0.8, ease: 'power3.out' })
+      .from(sidebar, { x: -260, opacity: 0, duration: 0.8, ease: 'power3.out' }, '-=0.6')
+      .from(cards, { x: -24, opacity: 0, duration: 0.7, stagger: 0.08, ease: 'back.out(1.4)' }, '-=0.64')
+      .from(mainCanvas, { opacity: 0, scale: 1.05, duration: 0.9, ease: 'power3.out' }, '-=0.6');
+  }, []);
+
   return (
-    <div className="app-root cyber-theme v4">
-      <header className="app-header">
-        <div className="header-brand">
-          <div className="brand-icon">⚠️</div>
-          <div>
-            <h1 className="brand-title">CrowdControl</h1>
-            <p className="brand-sub">Prediction and Mitigation of Stampede Risks</p>
-          </div>
+    <div ref={appRef} className="min-h-screen bg-obsdian-950 text-text-primary">
+      <Header
+        activeSection={activeSection}
+        onSectionChange={(section) => {
+          setActiveSection(section);
+          setIsMenuOpen(false);
+        }}
+        onMenuToggle={() => setIsMenuOpen(!isMenuOpen)}
+        isMenuOpen={isMenuOpen}
+      />
+
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={(section) => {
+          setActiveSection(section);
+          setIsMenuOpen(false);
+        }}
+        isOpen={isMenuOpen}
+        gridSize={gridSize}
+        onGridSizeChange={setGridSize}
+        fps={fps}
+        onFpsChange={setFps}
+        entryRate={entryRate}
+        onEntryRateChange={setEntryRate}
+        pressureFactor={pressureFactor}
+        onPressureFactorChange={setPressureFactor}
+        exitDrain={exitDrain}
+        onExitDrainChange={setExitDrain}
+        preventionEnabled={preventionEnabled}
+        onPreventionChange={setPreventionEnabled}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        drawTool={drawTool}
+        onDrawToolChange={setDrawTool}
+        brushSize={brushSize}
+        onBrushSizeChange={setBrushSize}
+        scenario={scenario}
+        onScenarioChange={loadScenario}
+        onClearLayout={handleClearLayout}
+        onPlay={handleStart}
+        onPause={handleStop}
+        onReset={handleReset}
+        isRunning={status === 'running'}
+        status={status}
+        step={step}
+        elapsed={elapsed}
+      />
+
+      <main className="lg:ml-72 pt-24 transition-all duration-300 ease-out">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
+          {activeSection === 'canvas' && (
+            <section data-canvas-panel className="space-y-6">
+              <div className="glass-card p-6 border border-cyan-cyber/10 shadow-glow-lg">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.35em] text-text-muted mb-3">
+                      Live command center
+                    </p>
+                    <h2 className="text-3xl lg:text-4xl font-bold text-gradient-indigo leading-tight">
+                      CrowdSim Live Simulation
+                    </h2>
+                    <p className="mt-3 max-w-2xl text-text-secondary">
+                      Real-time density, risk, and emergency flow diagnostics in a precision control dashboard.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="status-pill bg-cyan-cyber/10 border border-cyan-cyber/20 text-cyan-cyber">
+                      <span>Mode</span>
+                      <strong>{viewMode === 'density' ? 'Density View' : 'Risk Overlay'}</strong>
+                    </div>
+                    <div className="status-pill bg-emerald-math/10 border border-emerald-math/20 text-emerald-math">
+                      <span>AI Mitigation</span>
+                      <strong>{preventionEnabled ? 'Enabled' : 'Disabled'}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-[1.95fr_1fr] gap-6">
+                <SimulationCanvas
+                  canvasRef={liveCanvasRef}
+                  width={1120}
+                  height={760}
+                  isRunning={status === 'running'}
+                />
+
+                <div className="space-y-6">
+                  <div className="glass-card p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm uppercase tracking-[0.3em] text-text-muted">System Metrics</p>
+                      <span className="text-xs text-text-secondary">Live feed</span>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="metric-row">
+                        <span>Iteration</span>
+                        <strong>{step}</strong>
+                      </div>
+                      <div className="metric-row">
+                        <span>Elapsed</span>
+                        <strong>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</strong>
+                      </div>
+                      <div className="metric-row">
+                        <span>Active Alerts</span>
+                        <strong>{alerts.length}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-card p-5">
+                    <p className="text-sm uppercase tracking-[0.3em] text-text-muted mb-4">Command Console</p>
+                    <div className="grid gap-3">
+                      <div className="alert-chip bg-cyan-cyber/10 border border-cyan-cyber/20 text-cyan-cyber">
+                        <span>Optimal throughput</span>
+                        <strong>{Math.round(entryRate * 0.9)} ppl/min</strong>
+                      </div>
+                      <div className="alert-chip bg-emerald-math/10 border border-emerald-math/20 text-emerald-math">
+                        <span>AI mitigation</span>
+                        <strong>{preventionEnabled ? 'Reactive' : 'Standby'}</strong>
+                      </div>
+                      <div className="alert-chip bg-indigo-electric/10 border border-indigo-electric/20 text-indigo-electric">
+                        <span>Target refresh</span>
+                        <strong>{fps} fps</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeSection === 'formulas' && (
+            <div data-animate>
+              <FormulaShowcase />
+            </div>
+          )}
+
+          {activeSection === 'analytics' && (
+            <div data-animate>
+              <AnalyticsCards />
+            </div>
+          )}
+
+          {activeSection === 'alerts' && (
+            <div className="w-full py-12" data-animate>
+              <AlertsPanel />
+            </div>
+          )}
+
+          {activeSection === 'export' && (
+            <div className="w-full py-12" data-animate>
+              <div className="glass-card p-8">
+                <h2 className="text-3xl font-bold text-gradient-indigo mb-4">Data Export</h2>
+                <p className="text-text-secondary mb-6">
+                  Generate reports and export simulation data for external analysis.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button className="btn-primary p-4 text-left flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">Export Metrics</p>
+                      <p className="text-sm text-text-secondary">CSV format</p>
+                    </div>
+                    <span className="text-2xl">↓</span>
+                  </button>
+                  <button className="btn-secondary p-4 text-left flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">Export Report</p>
+                      <p className="text-sm text-text-secondary">PDF format</p>
+                    </div>
+                    <span className="text-2xl">↓</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="header-status">
-            <div className="stat-box">
-                <span className="label">ALERTS</span>
-                <span className="value neon-pink">{alerts.length}</span>
-            </div>
-            <div className="stat-box">
-                <span className="label">PREVENTION</span>
-                <span className="value" style={{color: preventionEnabled ? '#10b981' : '#64748b'}}>{preventionEnabled ? 'ON' : 'OFF'}</span>
-            </div>
-        </div>
-      </header>
-
-      <div className="app-body">
-        <aside className="sidebar">
-          <section className="sidebar-section">
-            <h2 className="section-title">AI_CONTROL</h2>
-            <div className="toggle-box" onClick={() => setPreventionEnabled(!preventionEnabled)}>
-                <div className={`toggle-track ${preventionEnabled ? 'on' : ''}`}><div className="toggle-thumb" /></div>
-                <span>MITIGATION_ENABLED</span>
-            </div>
-          </section>
-
-          <section className="sidebar-section">
-            <h2 className="section-title">Scenario</h2>
-            <div className="scenario-btns">
-              {['bottleneck', 'stadium'].map(sc => (
-                <button
-                  key={sc}
-                  onClick={() => loadScenario(sc as 'bottleneck' | 'stadium')}
-                  disabled={status === 'running' || status === 'initializing'}
-                  className={`cyber-btn ${scenario === sc ? 'active' : ''}`}
-                >
-                  {sc.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="sidebar-section">
-            <h2 className="section-title">Draw Tools</h2>
-            <div className="draw-tool-grid">
-              {([
-                ['wall', 'WALL'],
-                ['entry', 'ENTRY'],
-                ['exit', 'EXIT'],
-                ['erase', 'ERASE'],
-              ] as const).map(([tool, label]) => (
-                <button
-                  key={tool}
-                  onClick={() => setDrawTool(tool)}
-                  disabled={status === 'running' || status === 'initializing'}
-                  className={`draw-tool ${drawTool === tool ? 'active' : ''} ${tool}`}
-                >
-                  <span className="draw-swatch" />
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="param-group brush-group">
-              <label className="param-label">BRUSH <span className="param-val neon-cyan">{brushSize}</span></label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                step="1"
-                value={brushSize}
-                disabled={status === 'running' || status === 'initializing'}
-                onChange={e => setBrushSize(+e.target.value)}
-                className="cyber-slider"
-              />
-            </div>
-            <button
-              onClick={handleClearLayout}
-              disabled={status === 'running' || status === 'initializing'}
-              className="cyber-btn clear-layout-btn"
-            >
-              CLEAR LAYOUT
-            </button>
-          </section>
-
-          <section className="sidebar-section">
-            <h2 className="section-title">INFLOW</h2>
-            <div className="param-group">
-                <label className="param-label">ENTRY FLOW <span className="param-val neon-cyan">{entryRate.toFixed(1)} / sec</span></label>
-                <input type="range" min="0" max="200" step="1" value={entryRate} onChange={e => setEntryRate(+e.target.value)} className="cyber-slider" />
-                <p className="param-hint">Total crowd inflow distributed across all entry zones.</p>
-            </div>
-          </section>
-
-          <section className="sidebar-section">
-            <h2 className="section-title">Graph type</h2>
-            <div className="scenario-btns">
-              {viewModes.map(mode => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`cyber-btn ${viewMode === mode ? 'active' : ''}`}
-                >
-                  {mode.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section className="sidebar-section controls">
-            <button onClick={handleStart} disabled={status === 'running'} className="launch-btn primary">Start</button>
-            <div className="secondary-btns">
-                <button onClick={handleStop} className="cyber-btn-alt">stop</button>
-                <button onClick={handleReset} className="cyber-btn-alt">Reset</button>
-            </div>
-          </section>
-        </aside>
-
-        <main className="canvas-area">
-          <div className="canvas-frame">
-            <div className="canvas-container">
-              <canvas
-                ref={liveCanvasRef}
-                width={1000}
-                height={1000}
-                className={`sim-canvas ${status === 'running' || status === 'initializing' ? '' : 'editable'}`}
-                onPointerDown={event => {
-                  isDrawingRef.current = true;
-                  event.currentTarget.setPointerCapture(event.pointerId);
-                  paintCell(event);
-                }}
-                onPointerMove={event => {
-                  if (isDrawingRef.current) paintCell(event);
-                }}
-                onPointerUp={event => {
-                  isDrawingRef.current = false;
-                  event.currentTarget.releasePointerCapture(event.pointerId);
-                }}
-                onPointerLeave={() => {
-                  isDrawingRef.current = false;
-                }}
-              />
-            </div>
-          </div>
-        </main>
-      </div>
-
-      <style>{`
-        .cyber-theme { background: #020617; color: #94a3b8; font-family: 'JetBrains Mono', monospace; height: 100vh; }
-        .app-header { display: flex; justify-content: space-between; padding: 15px 30px; background: #0f172a; border-bottom: 1px solid #1e293b; }
-        .stat-box { display: flex; flex-direction: column; align-items: flex-end; margin-left: 30px; }
-        .stat-box .label { font-size: 9px; color: #64748b; }
-        .stat-box .value { font-size: 18px; font-weight: bold; }
-        .app-body { display: flex; height: calc(100vh - 70px); }
-        .sidebar { width: 300px; background: #0f172a; border-right: 1px solid #1e293b; padding: 20px; }
-        .section-title { font-size: 10px; color: #64748b; margin-bottom: 10px; border-left: 2px solid #00f2ff; padding-left: 10px; }
-        .sidebar-section { marginBottom: 30px; }
-        .toggle-box { display: flex; align-items: center; gap: 10px; font-size: 10px; cursor: pointer; }
-        .toggle-track { width: 34px; height: 18px; background: #1e293b; border-radius: 9px; position: relative; }
-        .toggle-track.on { background: #10b981; }
-        .toggle-thumb { width: 14px; height: 14px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
-        .toggle-track.on .toggle-thumb { left: 18px; }
-        .launch-btn { background: #00f2ff; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        .canvas-area { flex: 1; padding: 20px; display: flex; align-items: center; justify-content: center; background: #000; }
-        .canvas-frame { border: 1px solid #1e293b; }
-        .sim-canvas { max-width: 100%; height: auto; display: block; touch-action: none; }
-        .sim-canvas.editable { cursor: crosshair; }
-        .cyber-slider { width: 100%; margin: 10px 0; }
-        .param-hint { margin: 4px 0 0; font-size: 10px; color: #94a3b8; line-height: 1.2; }
-        .cyber-btn { background: transparent; border: 1px solid #1e293b; color: #64748b; padding: 8px 12px; font-size: 10px; cursor: pointer; margin-right: 5px; }
-        .cyber-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .cyber-btn.active { background: #1e293b; color: #00f2ff; border-color: #00f2ff; }
-        .draw-tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-        .draw-tool { display: flex; align-items: center; gap: 7px; background: #020617; border: 1px solid #1e293b; color: #94a3b8; padding: 8px; font-size: 10px; cursor: pointer; }
-        .draw-tool.active { border-color: #00f2ff; color: #e2e8f0; background: #111827; }
-        .draw-tool:disabled { opacity: 0.35; cursor: not-allowed; }
-        .draw-swatch { width: 12px; height: 12px; border-radius: 2px; background: #020617; border: 1px solid #334155; }
-        .draw-tool.wall .draw-swatch { background: #1e293b; }
-        .draw-tool.entry .draw-swatch { background: #3b82f6; }
-        .draw-tool.exit .draw-swatch { background: #10b981; }
-        .draw-tool.erase .draw-swatch { background: #020617; }
-        .brush-group { margin-top: 6px; }
-        .clear-layout-btn { width: 100%; margin-right: 0; }
-        .neon-pink { color: #ff0078; }
-        .neon-cyan { color: #00f2ff; }
-      `}</style>
+      </main>
     </div>
   );
 }

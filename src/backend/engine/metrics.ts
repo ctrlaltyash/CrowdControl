@@ -1,6 +1,7 @@
 import { SimParams, CellType } from './types';
 import { computeDirectionField } from './solver';
-import { stepDensityV3, computeRiskV3 } from './density';
+import { stepDensityV3, computeRiskV3, type DensityStepDiagnostics } from './density';
+import { createSimParams } from '../../shared/simParams';
 
 export interface DensityMetrics {
   maxDensity: number;
@@ -38,6 +39,13 @@ export interface TimeSeriesMetrics {
   exitFlowRatePerStep: number[];
 }
 
+export interface DensityDiagnostics {
+  totalOvershootCount: number;
+  totalOvershootMagnitude: number;
+  maxOvershootMagnitude: number;
+  overshootCountPerStep: number[];
+}
+
 export interface SimulationMetrics {
   scenarioName: string;
   densityMetrics: DensityMetrics;
@@ -49,6 +57,7 @@ export interface SimulationMetrics {
   finalDensity: Float64Array;
   finalRisk: Float64Array;
   finalVelocityMagnitude: Float64Array;
+  densityDiagnostics: DensityDiagnostics;
 }
 
 const DEFAULT_HIGH_RISK_THRESHOLD = 0.65;
@@ -66,7 +75,7 @@ function velocityMagnitude(vx: Float64Array, vy: Float64Array, mask?: Uint8Array
 }
 
 export function runSimulationWithMetrics(
-  params: SimParams,
+  paramsInput: Partial<SimParams>,
   cells: Uint8Array,
   rows: number,
   cols: number,
@@ -78,6 +87,7 @@ export function runSimulationWithMetrics(
   },
 ): SimulationMetrics {
   const N = rows * cols;
+  const params = createSimParams({ ...paramsInput, rows, cols });
   const riskThreshold = options?.riskThreshold ?? DEFAULT_HIGH_RISK_THRESHOLD;
   const dir = computeDirectionField(cells, rows, cols);
 
@@ -93,6 +103,7 @@ export function runSimulationWithMetrics(
   const meanRiskPerStep: number[] = [];
   const highRiskAreaPctPerStep: number[] = [];
   const exitFlowRatePerStep: number[] = [];
+  const overshootCountPerStep: number[] = [];
 
   let totalEntryMass = 0;
   let totalExitMass = 0;
@@ -102,14 +113,25 @@ export function runSimulationWithMetrics(
   let stepCount = 0;
   let stepOfPeakRisk = 0;
   let peakMeanRisk = 0;
+  let totalOvershootCount = 0;
+  let totalOvershootMagnitude = 0;
+  let maxOvershootMagnitude = 0;
 
   const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   const isActiveCell = (index: number) => cells[index] !== CellType.WALL && cells[index] !== CellType.MITIGATION;
-  const initialMass = Array.from(initialDensityState).reduce((carry, value) => carry + value, 0);
+  let initialMass = 0;
+  for (let i = 0; i < initialDensityState.length; i++) {
+    initialMass += initialDensityState[i];
+  }
 
   for (let step = 1; step <= params.maxSteps; step += 1) {
-    stepDensityV3(rho, rhoPrev, vx, vy, cells, params);
+    const diagnostics: DensityStepDiagnostics = {
+      overshootCount: 0,
+      totalOvershootMagnitude: 0,
+      maxOvershootMagnitude: 0,
+    };
+    stepDensityV3(rho, rhoPrev, vx, vy, cells, params, diagnostics);
     computeRiskV3(rhoPrev, vx, vy, distanceToExit, cells, risk, params);
 
     const currentMaxDensity = Math.max(...rhoPrev);
@@ -145,6 +167,11 @@ export function runSimulationWithMetrics(
       firstStepAboveCrit = step;
     }
 
+    overshootCountPerStep.push(diagnostics.overshootCount);
+    totalOvershootCount += diagnostics.overshootCount;
+    totalOvershootMagnitude += diagnostics.totalOvershootMagnitude;
+    maxOvershootMagnitude = Math.max(maxOvershootMagnitude, diagnostics.maxOvershootMagnitude);
+
     const exitFlow = rhoPrev.reduce((sum, _value, index) => {
       if (cells[index] !== CellType.EXIT) return sum;
       const diff = rho[index] - rhoPrev[index];
@@ -168,8 +195,11 @@ export function runSimulationWithMetrics(
     rhoPrev = temp;
 
     if (options?.stopWhenLowMass) {
-      const totalMass = Array.from(rho).reduce((carry, value) => carry + value, 0);
-      if (totalMass < 1e-4) break;
+      let totalCurrentMass = 0;
+      for (let i = 0; i < rho.length; i++) {
+        totalCurrentMass += rho[i];
+      }
+      if (totalCurrentMass < 1e-4) break;
     }
   }
 
@@ -190,11 +220,14 @@ export function runSimulationWithMetrics(
   }
 
   const finalMeanVelocity = finalVelocityCount > 0 ? finalVelocitySum / finalVelocityCount : 0;
-  const finalMinVelocity = finalVelocityCount > 0
-    ? Array.from(finalVelocityMagnitude)
-        .filter((value, index) => isActiveCell(index))
-        .reduce((min, v) => Math.min(min, v), Infinity)
-    : 0;
+  let finalMinVelocity = Infinity;
+  if (finalVelocityCount > 0) {
+    for (let i = 0; i < N; i++) {
+      if (isActiveCell(i)) {
+        finalMinVelocity = Math.min(finalMinVelocity, finalVelocityMagnitude[i]);
+      }
+    }
+  } else { finalMinVelocity = 0; }
 
   const finalMeanRisk = finalVelocityCount > 0 ? finalRiskSum / finalVelocityCount : 0;
   const finalHighRiskPct = finalVelocityCount > 0 ? (finalHighRiskCount / finalVelocityCount) * 100 : 0;
@@ -207,12 +240,15 @@ export function runSimulationWithMetrics(
     return count + (isActiveCell(index) ? 1 : 0);
   }, 0);
 
+  let cellsAboveCrit = 0;
+  for (let i = 0; i < N; i++) {
+    if (isActiveCell(i) && rho[i] > params.rhoCrit) cellsAboveCrit++;
+  }
+
   const densityMetrics: DensityMetrics = {
     maxDensity: maxDensityOverTime,
     meanDensity: stepCount > 0 ? sumMeanDensity / stepCount : 0,
-    percentageAboveCrit: activeFinalCellCount > 0
-      ? (Array.from(rho).filter((value, index) => isActiveCell(index) && value > params.rhoCrit).length / activeFinalCellCount) * 100
-      : 0,
+    percentageAboveCrit: activeFinalCellCount > 0 ? (cellsAboveCrit / activeFinalCellCount) * 100 : 0,
     firstStepAboveCrit,
   };
 
@@ -244,6 +280,12 @@ export function runSimulationWithMetrics(
     velocityMetrics,
     riskMetrics,
     numericalMetrics,
+    densityDiagnostics: {
+      totalOvershootCount,
+      totalOvershootMagnitude,
+      maxOvershootMagnitude,
+      overshootCountPerStep,
+    },
     timeSeries: {
       peakDensityPerStep,
       meanRiskPerStep,

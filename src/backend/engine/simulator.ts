@@ -7,6 +7,7 @@ import { computeDirectionField } from './solver';
 import { stepDensityV3, computeRiskV3 } from './density';
 import { detectHazards } from './analytics';
 import { calculateIntervention } from './mitigation';
+import { createSimParams } from '../../shared/simParams';
 
 export type SimulatorUpdateCallback = (state: SimulatorState) => void;
 export class CrowdSimulator {
@@ -18,9 +19,17 @@ export class CrowdSimulator {
   private onUpdate: SimulatorUpdateCallback | null = null;
   private onFinished: (() => void) | null = null;
 
-  constructor(params: SimParams, cells: Uint8Array, rows: number, cols: number) {
-    const N = rows * cols;
-    const dir = computeDirectionField(cells, rows, cols);
+  constructor(paramsInput: Partial<SimParams>, cells: Uint8Array, rows?: number, cols?: number) {
+    const params = createSimParams(paramsInput);
+    const resolvedRows = rows ?? params.rows;
+    const resolvedCols = cols ?? params.cols;
+    const N = resolvedRows * resolvedCols;
+    if (cells.length !== N) {
+      throw new Error(`Cell grid size ${cells.length} does not match ${resolvedRows}x${resolvedCols}`);
+    }
+
+    const resolvedParams = { ...params, rows: resolvedRows, cols: resolvedCols };
+    const dir = computeDirectionField(cells, resolvedRows, resolvedCols);
     
     this.state = {
       rho: new Float64Array(N),
@@ -30,11 +39,11 @@ export class CrowdSimulator {
       vy: dir.vy,
       distanceToExit: dir.dist,
       cells: new Uint8Array(cells),
-      params,
+      params: resolvedParams,
       stepCount: 0,
       running: false,
-      rows,
-      cols,
+      rows: resolvedRows,
+      cols: resolvedCols,
       alerts: [],
     };
 

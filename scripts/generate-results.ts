@@ -3,28 +3,10 @@ import * as path from 'node:path';
 import { createCanvas, type Canvas } from '@napi-rs/canvas';
 import { buildBottleneckScenario, buildStadiumScenario, ScenarioResult } from '../src/backend/engine/scenarios.ts';
 import { runSimulationWithMetrics, SimulationMetrics } from '../src/backend/engine/metrics.ts';
-import { SimParams } from '../src/backend/engine/types.ts';
+import { DEFAULT_PARAMS } from '../src/shared/simParams.ts';
 
 const RESULTS_DIR = path.join(process.cwd(), 'results');
 const FIGURES_DIR = path.join(RESULTS_DIR, 'figures');
-
-const DEFAULT_PARAMS: SimParams = {
-  rows: 100,
-  cols: 100,
-  dt: 0.04,
-  rhoMax: 6,
-  rhoCrit: 2.5,
-  spreadFactor: 0.1,
-  pushFactor: 2.0,
-  minSpeedFactor: 0.01,
-  entryRate: 80.0,
-  exitDrain: 0.35,
-  renderEvery: 1,
-  maxSteps: 10000,
-  epsilon: 0.05,
-  riskWeight: 1.0,
-  mitigationResponsiveness: 0.0,
-};
 
 const scenarios: ScenarioResult[] = [
   buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols),
@@ -150,6 +132,7 @@ function drawLineChart(
 
   const maxValue = Math.max(...values, 1);
   const minValue = Math.min(...values, 0);
+  const valueRange = maxValue - minValue || 1;
 
   ctx.strokeStyle = '#cccccc';
   ctx.lineWidth = 1;
@@ -175,7 +158,7 @@ function drawLineChart(
     ctx.beginPath();
     values.forEach((value, index) => {
       const x = margin + (plotWidth * index) / (values.length - 1);
-      const y = margin + plotHeight - ((value - minValue) / (maxValue - minValue)) * plotHeight;
+      const y = margin + plotHeight - ((value - minValue) / valueRange) * plotHeight;
       if (index === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
@@ -192,7 +175,7 @@ function drawLineChart(
   ctx.font = '24px Arial';
   ctx.textAlign = 'right';
   for (let i = 0; i <= 5; i += 1) {
-    const value = ((maxValue - minValue) * (5 - i)) / 5 + minValue;
+    const value = (valueRange * (5 - i)) / 5 + minValue;
     const y = margin + (plotHeight * i) / 5;
     ctx.fillText(value.toFixed(2), margin - 10, y + 8);
   }
@@ -284,6 +267,9 @@ async function run() {
     'Peak Risk',
     'High-Risk Area Percentage',
     'Average Velocity',
+    'Total Overshoot Count',
+    'Total Overshoot Magnitude',
+    'Max Overshoot Magnitude',
     'Total Evacuation Time (s)',
   ]];
 
@@ -302,6 +288,9 @@ async function run() {
     'Mean Risk',
     'Pct Cells > Risk Threshold',
     'Time of Peak Risk',
+    'Total Overshoot Count',
+    'Total Overshoot Magnitude',
+    'Max Overshoot Magnitude',
     'Mass Conservation Error',
     'Runtime ms',
     'Num Timesteps',
@@ -321,6 +310,9 @@ async function run() {
       formatNumber(metrics.riskMetrics.maxRisk, 3),
       formatNumber(metrics.riskMetrics.percentageAboveThreshold, 2) + '%',
       formatNumber(metrics.velocityMetrics.meanVelocity, 3),
+      String(metrics.densityDiagnostics.totalOvershootCount),
+      formatNumber(metrics.densityDiagnostics.totalOvershootMagnitude, 4),
+      formatNumber(metrics.densityDiagnostics.maxOvershootMagnitude, 4),
       formatNumber(metrics.numericalMetrics.numTimesteps * DEFAULT_PARAMS.dt, 2),
     ];
     summaryRows.push(summaryRow);
@@ -340,6 +332,9 @@ async function run() {
       formatNumber(metrics.riskMetrics.meanRisk, 4),
       formatNumber(metrics.riskMetrics.percentageAboveThreshold, 3),
       String(metrics.riskMetrics.timeOfPeakRisk),
+      String(metrics.densityDiagnostics.totalOvershootCount),
+      formatNumber(metrics.densityDiagnostics.totalOvershootMagnitude, 6),
+      formatNumber(metrics.densityDiagnostics.maxOvershootMagnitude, 6),
       formatNumber(metrics.numericalMetrics.massConservationError, 6),
       formatNumber(metrics.numericalMetrics.runtimeMs, 1),
       String(metrics.numericalMetrics.numTimesteps),

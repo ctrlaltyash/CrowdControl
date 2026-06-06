@@ -7,13 +7,17 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "node --import tsx --test --test-reporter spec src/backend/engine/density.invariants.test.ts",
     "preview": "vite preview",
     "generate:results": "mkdir -p results/figures && npx tsx scripts/generate-results.ts"
   },
   "dependencies": {
+    "gsap": "^3.12.2",
+    "katex": "^0.16.9",
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-katex": "^3.1.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -22,6 +26,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/react-katex": "^3.0.4",
     "@vitejs/plugin-react": "^4.3.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^10.4.0",
