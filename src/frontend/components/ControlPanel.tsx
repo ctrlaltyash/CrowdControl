@@ -28,12 +28,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: 0.2 }
-    );
+    const ctx = gsap.context(() => {
+      if (!containerRef.current) return;
+      gsap.fromTo(
+        containerRef.current,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: 0.2 }
+      );
+    }, containerRef);
+    
+    return () => ctx.revert();
   }, []);
 
   useEffect(() => {

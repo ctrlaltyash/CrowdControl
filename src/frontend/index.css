@@ -1,219 +1,72 @@
-/* ── Premium Typography Imports ─────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=STIX+Two+Math&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap');
 
-/* ── Tailwind Directives ─────────────────────────────────────── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── CSS Variables & Root Styling ───────────────────────────── */
+/* No cap, setting up the root vibes */
 :root {
-  --bg-root: #0B0F19;
-  --bg-panel: #131A2E;
-  --bg-card: #1A2541;
-  --bg-elevated: #232F4A;
-  --bg-hover: #2D3F5F;
-  --border-subtle: rgba(99, 102, 241, 0.08);
-  --border-default: rgba(99, 102, 241, 0.12);
-  --border-strong: rgba(99, 102, 241, 0.2);
-  --text-primary: #F8FAFC;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --text-dim: #64748B;
-  --accent-indigo: #6366F1;
-  --accent-cyan: #00D9FF;
-  --accent-emerald: #10B981;
-}
-
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
-  min-height: 100vh;
-  background-color: var(--bg-root);
-  background-image:
-    radial-gradient(circle at 20% 15%, rgba(0, 217, 255, 0.12), transparent 18%),
-    radial-gradient(circle at 80% 10%, rgba(99, 102, 241, 0.1), transparent 20%),
-    radial-gradient(circle at 60% 90%, rgba(16, 185, 129, 0.06), transparent 18%);
+  /* the base drip: dark void background, crisp text, and neon selections */
+  @apply bg-void-950 text-gray-200 antialiased selection:bg-neon-pink selection:text-white;
+  
+  /* adding a subtle grid background because it hits different */
+  background-image: 
+    linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
   background-attachment: fixed;
-  color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
-  font-weight: 400;
-  line-height: 1.6;
-  letter-spacing: 0.3px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: 'Syne', 'Plus Jakarta Sans', system-ui, sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-}
-
-h1 {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 800;
-  background: linear-gradient(135deg, #F8FAFC 0%, #CBD5E1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-p {
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-
-a {
-  color: var(--accent-indigo);
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-a:hover {
-  color: var(--accent-cyan);
-}
-
+/* custom scrollbar so we don't have that ugly default windows scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
+  @apply bg-void-700 rounded-full;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-::selection {
-  background-color: var(--accent-indigo);
-  color: var(--text-primary);
+  @apply bg-neon-purple;
 }
 
 @layer components {
-  .card-premium {
-    @apply bg-obsdian-800 border border-indigo-glow/20 rounded-3xl backdrop-blur-xl shadow-premium transition-all duration-300;
-  }
-
-  .btn-primary {
-    @apply px-6 py-3 rounded-2xl bg-indigo-electric text-white font-semibold shadow-glow-lg transition-all duration-300 hover:bg-indigo-vivid active:scale-[0.98];
-  }
-
-  .btn-secondary {
-    @apply px-6 py-3 rounded-2xl bg-obsdian-900 border border-indigo-glow/20 text-text-secondary font-semibold transition-all duration-300 hover:bg-obsdian-800;
-  }
-
-  .btn-icon {
-    @apply relative inline-flex h-12 w-12 items-center justify-center rounded-3xl bg-obsdian-900/90 text-cyan-cyber border border-white/10 transition-all duration-300 hover:bg-obsdian-800;
-  }
-
+  /* This glass card is goated for our UI components */
   .glass-card {
-    @apply bg-obsdian-900/85 border border-cyan-cyber/10 rounded-[1.75rem] backdrop-blur-2xl shadow-premium transition-all duration-300;
+    @apply bg-void-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-glass;
+  }
+  
+  /* Buttons with major main character energy */
+  .btn-neon-pink {
+    @apply px-6 py-3 rounded-xl bg-neon-pink text-white font-bold tracking-wide shadow-glow-pink hover:bg-fuchsia-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-neon-cyan {
+    @apply px-6 py-3 rounded-xl bg-neon-cyan text-white font-bold tracking-wide shadow-glow-cyan hover:bg-cyan-400 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-ghost {
+    @apply px-6 py-3 rounded-xl bg-white/5 text-gray-300 font-bold hover:bg-white/10 hover:text-white transition-all active:scale-95 border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  .glass-card:hover {
-    @apply border-cyan-cyber/20 shadow-glow-lg;
-  }
-
-  .nav-pill {
-    @apply rounded-full border border-transparent px-4 py-2 text-xs font-semibold transition-all duration-300;
-  }
-
+  /* Sliders that don't look like they're from 1995 */
   .slider-input {
     @apply w-full cursor-pointer bg-transparent appearance-none;
   }
-
   .slider-input::-webkit-slider-runnable-track {
-    height: 12px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.08);
+    @apply h-2 bg-void-700 rounded-full;
   }
-
   .slider-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 9999px;
-    background: linear-gradient(135deg, #00D9FF, #6366F1);
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 24px rgba(0, 217, 255, 0.2);
+    @apply appearance-none w-5 h-5 rounded-full bg-neon-cyan border-2 border-void-950 shadow-glow-cyan -mt-1.5 transition-transform hover:scale-110;
   }
-
-  .slider-input::-moz-range-track {
-    height: 12px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .slider-input::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 9999px;
-    background: linear-gradient(135deg, #00D9FF, #6366F1);
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 24px rgba(0, 217, 255, 0.2);
-  }
-
+  
+  /* Labels for the sliders */
   .slider-label {
-    @apply text-sm font-semibold text-text-secondary mb-3 block;
-  }
-
-  .slider-value {
-    @apply mt-2 text-xs text-text-muted;
-  }
-
-  .toggle-switch {
-    @apply relative inline-flex h-9 w-16 cursor-pointer items-center rounded-full border border-indigo-glow/20 bg-white/5 transition-all duration-300;
-  }
-
-  .toggle-switch input {
-    @apply sr-only;
-  }
-
-  .toggle-thumb {
-    @apply absolute left-1 top-1 h-7 w-7 rounded-full bg-cyan-cyber shadow-glow transition-all duration-300;
-  }
-
-  .toggle-switch.active {
-    @apply bg-cyan-cyber/15 border-cyan-cyber/40;
-  }
-
-  .toggle-switch.active .toggle-thumb {
-    transform: translateX(28px);
-    background: linear-gradient(135deg, #00D9FF, #4F46E5);
-  }
-
-  .status-pill {
-    @apply rounded-full border px-4 py-2 text-left;
-  }
-
-  .metric-row {
-    @apply flex items-center justify-between text-sm text-text-secondary;
-  }
-
-  .alert-chip {
-    @apply rounded-3xl border px-4 py-3 font-semibold transition-all duration-300;
+    @apply text-xs font-semibold text-gray-400 uppercase tracking-widest block;
   }
 }

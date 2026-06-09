@@ -2,74 +2,79 @@
    StampedePredictor — Type Definitions (Simplified Model)
    ───────────────────────────────────────────────────────────── */
 
-/** Cell type enum: 0=empty, 1=wall, 2=exit, 3=entry */
+// yo dis enum defines wat each block is
+// dont mix em up or it'll be a whole mess
 export enum CellType {
-  EMPTY  = 0,
-  WALL   = 1,
-  EXIT   = 2,
-  ENTRY  = 3,
-  MITIGATION = 4,
+  EMPTY  = 0, // just air lol
+  WALL   = 1, // u cant go here... rip
+  EXIT   = 2, // the way out... finally
+  ENTRY  = 3, // where everyone pulls up
+  MITIGATION = 4, // ai fixin things
 }
 
 /** Simulation parameters — V2 Physics Model */
+// big list of numbers dat make the magic happen
 export interface SimParams {
-  rows: number;
-  cols: number;
-  dt: number;
-  rhoMax: number;
-  rhoCrit: number;
-  spreadFactor: number;
-  pushFactor: number;
-  minSpeedFactor: number;
-  beta: number;
-  pressureA: number;
-  pressureK: number;
-  pressureN: number;
-  entryRate: number;
-  exitDrain: number;
-  renderEvery: number;
-  maxSteps: number;
-  epsilon: number;
-  diffusivity: number;
-  riskAlpha: number;
-  riskDelta: number;
-  riskGamma: number;
-  riskEta: number;
-  riskNormalization: number;
+  rows: number; // rows fr
+  cols: number; // cols fr
+  dt: number; // time zoom
+  rhoMax: number; // max peeps in a spot
+  rhoCrit: number; // when it gets scary
+  spreadFactor: number; // chill factor
+  pushFactor: number; // aggressive factor
+  minSpeedFactor: number; // slow walk
+  beta: number; // beta... not alpha?
+  pressureA: number; // pressure A
+  pressureK: number; // pressure K
+  pressureN: number; // pressure N
+  entryRate: number; // spawn rate
+  exitDrain: number; // despawn rate
+  renderEvery: number; // frame skip?
+  maxSteps: number; // game over
+  epsilon: number; // smol math
+  diffusivity: number; // drift
+  riskAlpha: number; // risk A
+  riskDelta: number; // risk D
+  riskGamma: number; // risk G
+  riskEta: number; // risk E
+  riskNormalization: number; // normal vibes
   /** V2: Turbulence/Risk factor */
-  riskWeight: number;
+  riskWeight: number; // how much risk we feelin
   /** AI mitigation responsiveness: 0=passive, 1=balanced, 2=aggressive */
-  mitigationResponsiveness: number;
+  mitigationResponsiveness: number; // how fast the ai acts... no cap
 }
 
 /** Simulation status */
+// wat is the sim doin rn?
 export type SimStatus = 'idle' | 'initializing' | 'running' | 'finished' | 'stopped';
 
 /** Hazard types for analytics */
+// when things go south
 export interface HazardAlert {
-  id: string;
-  r: number;
-  c: number;
-  intensity: number;
-  timestamp: number;
-  type: 'CRUSH_RISK' | 'STAGNANCY' | 'TURBULENCE';
-  mitigated: boolean;
+  id: string; // unique tag
+  r: number; // row loc
+  c: number; // col loc
+  intensity: number; // how bad is it?
+  timestamp: number; // when it happened
+  type: 'CRUSH_RISK' | 'STAGNANCY' | 'TURBULENCE'; // the bad stuff
+  mitigated: boolean; // did we fix it tho?
 }
 
 /** V2: Simulator State Container */
+// the whole world state... big brain energy
 export interface SimulatorState {
-  rho: Float64Array;
-  rhoPrev: Float64Array;
-  risk: Float64Array;
-  vx: Float64Array;
-  vy: Float64Array;
-  distanceToExit: Float64Array;
-  cells: Uint8Array;
-  params: SimParams;
-  stepCount: number;
-  running: boolean;
-  rows: number;
-  cols: number;
+  rho: Float64Array; // density map
+  rhoPrev: Float64Array; // last frame
+  risk: Float64Array; // risk map... scary
+  vx: Float64Array; // velocity x
+  vy: Float64Array; // velocity y
+  distanceToExit: Float64Array; // how far to the door
+  cells: Uint8Array; // the map layout
+  params: SimParams; // current settings
+  stepCount: number; // how many ticks
+  running: boolean; // is it zoomin?
+  rows: number; // rows again
+  cols: number; // cols again
   /** V4: Analytics & Mitigation */
-  alerts: HazardAlert[];
+  alerts: HazardAlert[]; // all the current issues
 }

@@ -1,11 +1,15 @@
 /*
    ColorMap V3 - Dynamic Fluid Palettes
    Reacts to density, velocity, and temporal oscillation.
+
+   dis file is pure rizz, makin everything look aesthetic.
+   lowkey makin colors pop fr fr.
 */
 
 type RGB = [number, number, number];
 type RGBA = [number, number, number, number];
 
+// cache for the heatmap, no cap, so we don't lag
 type HeatmapCache = {
   gridCanvas: HTMLCanvasElement;
   gridCtx: CanvasRenderingContext2D;
@@ -22,10 +26,11 @@ type HeatmapCache = {
 };
 
 const heatmapCache = new WeakMap<CanvasRenderingContext2D, HeatmapCache>();
-const MAX_RENDER_SCALE = 4;
+const MAX_RENDER_SCALE = 4; // limit dat scale or it's too much
 const TARGET_SCREEN_PIXELS_PER_TEXEL = 2.5;
-const VISIBILITY_FLOOR = 0.012;
+const VISIBILITY_FLOOR = 0.012; // if it's below dis, it's mid, don't show it
 
+// spectral stops for the vibe check
 const SPECTRAL_STOPS: RGB[] = [
   [5, 15, 35],
   [0, 120, 190],
@@ -34,6 +39,7 @@ const SPECTRAL_STOPS: RGB[] = [
   [220, 40, 40],
 ];
 
+// sampling the stops like a DJ, bet
 function sampleStops(stops: RGB[], t: number): RGB {
   const n = stops.length - 1;
   const scaled = Math.max(0, Math.min(1, t)) * n;
@@ -49,6 +55,7 @@ function sampleStops(stops: RGB[], t: number): RGB {
   ];
 }
 
+// adding some spicy velocity tint, fr fr
 function applyVelocityTint(rgb: RGB, v: number): RGB {
   const velocityBoost = Math.min(1, v * 1.5);
   return [
@@ -58,8 +65,9 @@ function applyVelocityTint(rgb: RGB, v: number): RGB {
   ];
 }
 
+// density to RGBA fluid - dis is where the magic happens
 export function densityToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
-  if (t <= VISIBILITY_FLOOR) return [0, 0, 0, 0];
+  if (t <= VISIBILITY_FLOOR) return [0, 0, 0, 0]; // too mid to show
   const colorIdx = Math.max(0, Math.min(1, t));
   const baseColor = sampleStops(SPECTRAL_STOPS, colorIdx);
   const [r, g, b] = applyVelocityTint(baseColor, v);
@@ -69,15 +77,16 @@ export function densityToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   return [Math.round(r), Math.round(g), Math.round(b), Math.min(255, blendedAlpha)];
 }
 
+// risk to RGBA fluid - red is sus, bet
 export function riskToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   const colorIdx = Math.max(0, Math.min(1, Math.pow(t, 0.75) * 1.4));
-  if (colorIdx <= 0.002) return [0, 0, 0, 0];
+  if (colorIdx <= 0.002) return [0, 0, 0, 0]; // safe vibe
   const [r, g, b] = sampleStops([
     [50, 60, 100],
     [30, 140, 210],
     [245, 150, 50],
     [220, 80, 40],
-    [200, 25, 25],
+    [200, 25, 25], // major danger, fr
   ], colorIdx);
   const velocityBoost = Math.min(1, v * 2);
   const boosted: RGB = [
@@ -91,6 +100,7 @@ export function riskToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   return [Math.round(boosted[0]), Math.round(boosted[1]), Math.round(boosted[2]), Math.min(255, blendedAlpha)];
 }
 
+// main render function - it's the goat
 export function renderHeatmapFluid(
   ctx: CanvasRenderingContext2D,
   rho: Float64Array,
@@ -114,19 +124,23 @@ export function renderHeatmapFluid(
   const field = cache.field;
   const speedField = cache.speedField;
 
+  // populate dat grid, no cap
   for (let i = 0; i < rows * cols; i++) {
     cellField[i] = mode === 'risk' ? risk[i] : rho[i];
     cellSpeed[i] = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
   }
 
+  // scale it up for that smooth look
   upsampleField(cellField, field, rows, cols, renderScale);
   upsampleField(cellSpeed, speedField, rows, cols, renderScale);
 
+  // blur it bc we want it fluid, fr
   const blurRadius = Math.max(2, Math.round(renderScale * 1.25));
   blurField(field, cache.scratchField, renderCols, renderRows, blurRadius);
   blurField(speedField, cache.scratchSpeed, renderCols, renderRows, blurRadius);
 
   const totalPixels = renderCols * renderRows;
+  // loop thru pixels and color them, bet
   for (let idx = 0; idx < totalPixels; idx++) {
     const value = Math.max(0, Math.min(1, field[idx]));
     const speed = Math.max(0, Math.min(1, speedField[idx]));
@@ -141,12 +155,14 @@ export function renderHeatmapFluid(
     pixels[off + 3] = rgba[3];
   }
 
+  // put it on the canvas, lowkey aesthetic
   cache.gridCtx.putImageData(cache.imageData, 0, 0);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(cache.gridCanvas, 0, 0, canvasW, canvasH);
 }
 
+// pickin the scale so it's not mid
 function chooseRenderScale(rows: number, cols: number, canvasW: number, canvasH: number): number {
   const cellPixelSize = Math.max(
     canvasW / Math.max(1, cols),
@@ -155,6 +171,7 @@ function chooseRenderScale(rows: number, cols: number, canvasW: number, canvasH:
   return Math.max(1, Math.min(MAX_RENDER_SCALE, Math.ceil(cellPixelSize / TARGET_SCREEN_PIXELS_PER_TEXEL)));
 }
 
+// upsampling field, no cap, makin it bigger
 function upsampleField(
   source: Float32Array,
   dest: Float32Array,
@@ -191,6 +208,7 @@ function upsampleField(
   }
 }
 
+// blur function, fr fr, gaussian vibes
 function blurField(
   field: Float32Array,
   scratch: Float32Array,
@@ -233,6 +251,7 @@ function blurField(
   }
 }
 
+// kernel for the blur, no cap
 function createGaussianKernel(radius: number): number[] {
   const sigma = Math.max(1, radius / 2);
   const kernel: number[] = [];
@@ -244,6 +263,7 @@ function createGaussianKernel(radius: number): number[] {
   return kernel;
 }
 
+// cache it or we r cooked
 function getHeatmapCache(
   ctx: CanvasRenderingContext2D,
   rows: number,

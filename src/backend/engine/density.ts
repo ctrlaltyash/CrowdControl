@@ -1,16 +1,30 @@
 /* ─────────────────────────────────────────────────────────────
    Density Evolution V6 — Nonlinear Degenerate Advection-Diffusion
    Implements the paper's crowd instability model directly.
+   
+   dis is the big brain math file, no cap.
+   lowkey simulation how ppl move and squash each other. fr.
    ───────────────────────────────────────────────────────────── */
 
 import { CellType, SimParams } from './types';
 
+// diagnostics for when the math goes sus
 export interface DensityStepDiagnostics {
   overshootCount: number;
   totalOvershootMagnitude: number;
   maxOvershootMagnitude: number;
 }
 
+// cache for buffers so we don't lag the whole vibe
+const SCRATCH_BUFFERS = new WeakMap<Float64Array, {
+  pressure: Float64Array;
+  velocityX: Float64Array;
+  velocityY: Float64Array;
+  scratch1: Float64Array;
+  scratch2: Float64Array;
+}>();
+
+// main function to step the density, rizzing up the grid
 export function stepDensityV3(
   curr: Float64Array,
   next: Float64Array,
@@ -42,16 +56,29 @@ export function stepDensityV3(
   const D = typeof diffusivity === 'number' && diffusivity >= 0 ? diffusivity : spreadFactor;
   const push = typeof pushFactor === 'number' ? Math.max(0, pushFactor) : 1;
 
-  const pressure = new Float64Array(N);
-  const velocityX = new Float64Array(N);
-  const velocityY = new Float64Array(N);
+  // gettin or makin buffers, bet
+  let buffers = SCRATCH_BUFFERS.get(curr);
+  if (!buffers || buffers.pressure.length !== N) {
+    buffers = {
+      pressure: new Float64Array(N),
+      velocityX: new Float64Array(N),
+      velocityY: new Float64Array(N),
+      scratch1: new Float64Array(N),
+      scratch2: new Float64Array(N),
+    };
+    SCRATCH_BUFFERS.set(curr, buffers);
+  }
 
+  const { pressure, velocityX, velocityY, scratch1, scratch2 } = buffers;
+
+  // helpers to see if we r hitting a wall or out of bounds, sus
   const isBlocked = (index: number) => cells[index] === CellType.WALL || cells[index] === CellType.MITIGATION;
   const inBounds = (r: number, c: number) => r >= 0 && r < rows && c >= 0 && c < cols;
 
+  // compute pressure and velocity, no cap
   const computePressureAndVelocity = (source: Float64Array) => {
     for (let i = 0; i < N; i++) {
-      if (cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) {
+      if (isBlocked(i)) {
         velocityX[i] = 0;
         velocityY[i] = 0;
         pressure[i] = 0;
@@ -59,17 +86,19 @@ export function stepDensityV3(
       }
 
       const density = Math.max(0, source[i]);
+      // mobility is how much u can move, lowkey important
       const mobility = Math.max(0, Math.pow(Math.max(0, 1 - density / rhoMax), beta));
       velocityX[i] = baseVx[i] * mobility * push;
       velocityY[i] = baseVy[i] * mobility * push;
 
+      // activate pressure bc it's getting tight in here
       const activation = pressureA === 0 ? 0.5 : 1 / (1 + Math.exp(-pressureA * (density - rhoCrit)));
       const scaledDensity = rhoCrit > 0 ? density / rhoCrit : 0;
       pressure[i] = pressureK * Math.pow(scaledDensity, pressureN) * activation;
     }
   };
 
-  const overshootCellMask = diagnostics ? new Uint8Array(N) : null;
+  // perform one step of the simulation, the goat function
   const performStep = (source: Float64Array, dest: Float64Array, localDt: number) => {
     computePressureAndVelocity(source);
     dest.fill(0);
@@ -77,46 +106,41 @@ export function stepDensityV3(
     for (let i = 0; i < N; i++) {
       const cell = cells[i];
       const density = Math.max(0, source[i]);
-      if (cell === CellType.WALL || cell === CellType.MITIGATION) {
-        dest[i] = density; // Preserve mass (trapped) rather than deleting it
+      if (isBlocked(i)) {
+        dest[i] = density;
         continue;
       }
 
       const r = Math.floor(i / cols);
       const c = i % cols;
 
-      let FxEast = 0;
-      let FxWest = 0;
-      let FySouth = 0;
-      let FyNorth = 0;
+      // fluxes for advection, fr fr
+      let FxEast = 0, FxWest = 0, FySouth = 0, FyNorth = 0;
 
       if (c < cols - 1) {
         const right = i + 1;
-        if (!isBlocked(i) && !isBlocked(right)) {
+        if (!isBlocked(right)) {
           const faceV = 0.5 * (velocityX[i] + velocityX[right]);
           FxEast = faceV >= 0 ? density * faceV : Math.max(0, source[right]) * faceV;
         }
       }
-
       if (c > 0) {
         const left = i - 1;
-        if (!isBlocked(i) && !isBlocked(left)) {
+        if (!isBlocked(left)) {
           const faceV = 0.5 * (velocityX[i] + velocityX[left]);
           FxWest = faceV >= 0 ? Math.max(0, source[left]) * faceV : density * faceV;
         }
       }
-
       if (r < rows - 1) {
         const down = i + cols;
-        if (!isBlocked(i) && !isBlocked(down)) {
+        if (!isBlocked(down)) {
           const faceV = 0.5 * (velocityY[i] + velocityY[down]);
           FySouth = faceV >= 0 ? density * faceV : Math.max(0, source[down]) * faceV;
         }
       }
-
       if (r > 0) {
         const up = i - cols;
-        if (!isBlocked(i) && !isBlocked(up)) {
+        if (!isBlocked(up)) {
           const faceV = 0.5 * (velocityY[i] + velocityY[up]);
           FyNorth = faceV >= 0 ? Math.max(0, source[up]) * faceV : density * faceV;
         }
@@ -124,15 +148,9 @@ export function stepDensityV3(
 
       const advection = -(FxEast - FxWest + FySouth - FyNorth);
 
-      let neighborSum = 0;
-      let neighborCount = 0;
-      const neighbors = [
-        [r - 1, c],
-        [r + 1, c],
-        [r, c - 1],
-        [r, c + 1],
-      ];
-
+      // diffusion so ppl spread out, bet
+      let neighborSum = 0, neighborCount = 0;
+      const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
       for (const [nr, nc] of neighbors) {
         if (!inBounds(nr, nc)) {
           neighborSum += density;
@@ -140,74 +158,57 @@ export function stepDensityV3(
           const ni = idx(nr, nc);
           neighborSum += isBlocked(ni) ? density : Math.max(0, source[ni]);
         }
-        neighborCount += 1;
+        neighborCount++;
       }
-
       const diffusion = D * (neighborSum - neighborCount * density);
 
-      let PxEast = 0;
-      let PxWest = 0;
-      let PySouth = 0;
-      let PyNorth = 0;
-
+      // compression bc ppl r squishin, lowkey scary
+      let PxEast = 0, PxWest = 0, PySouth = 0, PyNorth = 0;
       if (c < cols - 1) {
         const right = i + 1;
-        if (!isBlocked(i) && !isBlocked(right)) {
+        if (!isBlocked(right)) {
           const faceVelocity = -(pressure[right] - pressure[i]);
-          PxEast = faceVelocity >= 0
-            ? density * faceVelocity
-            : Math.max(0, source[right]) * faceVelocity;
+          PxEast = faceVelocity >= 0 ? density * faceVelocity : Math.max(0, source[right]) * faceVelocity;
         }
       }
-
       if (c > 0) {
         const left = i - 1;
-        if (!isBlocked(i) && !isBlocked(left)) {
+        if (!isBlocked(left)) {
           const faceVelocity = -(pressure[i] - pressure[left]);
-          PxWest = faceVelocity >= 0
-            ? Math.max(0, source[left]) * faceVelocity
-            : density * faceVelocity;
+          PxWest = faceVelocity >= 0 ? Math.max(0, source[left]) * faceVelocity : density * faceVelocity;
         }
       }
-
       if (r < rows - 1) {
         const down = i + cols;
-        if (!isBlocked(i) && !isBlocked(down)) {
+        if (!isBlocked(down)) {
           const faceVelocity = -(pressure[down] - pressure[i]);
-          PySouth = faceVelocity >= 0
-            ? density * faceVelocity
-            : Math.max(0, source[down]) * faceVelocity;
+          PySouth = faceVelocity >= 0 ? density * faceVelocity : Math.max(0, source[down]) * faceVelocity;
         }
       }
-
       if (r > 0) {
         const up = i - cols;
-        if (!isBlocked(i) && !isBlocked(up)) {
+        if (!isBlocked(up)) {
           const faceVelocity = -(pressure[i] - pressure[up]);
-          PyNorth = faceVelocity >= 0
-            ? Math.max(0, source[up]) * faceVelocity
-            : density * faceVelocity;
+          PyNorth = faceVelocity >= 0 ? Math.max(0, source[up]) * faceVelocity : density * faceVelocity;
         }
       }
 
       const compression = -(PxEast - PxWest + PySouth - PyNorth);
       let updated = density + localDt * (advection + diffusion + compression);
 
+      // if u at the exit, u out, peace
       if (cell === CellType.EXIT) {
         updated = Math.max(0, updated - exitDrain * updated * localDt);
       }
 
+      // don't go over rhoMax, dat's the rule
       const clamped = Math.max(0, Math.min(updated, rhoMax));
       if (diagnostics && updated > rhoMax) {
         const overshoot = updated - rhoMax;
-        if (overshootCellMask![i] === 0) {
-          overshootCellMask![i] = 1;
-          diagnostics.overshootCount += 1;
-        }
+        diagnostics.overshootCount++;
         diagnostics.totalOvershootMagnitude += overshoot;
         diagnostics.maxOvershootMagnitude = Math.max(diagnostics.maxOvershootMagnitude, overshoot);
       }
-
       dest[i] = clamped;
     }
   };
@@ -218,28 +219,22 @@ export function stepDensityV3(
     return;
   }
 
+  // substeps so the math doesn't explode, fr fr
   const stableDt = Math.min(effectiveDt, 0.01);
   const substeps = Math.max(1, Math.ceil(effectiveDt / stableDt));
   const stepDt = effectiveDt / substeps;
-  const scratch1 = substeps > 1 ? new Float64Array(N) : null;
-  const scratch2 = substeps > 2 ? new Float64Array(N) : null;
   let source = curr;
 
   for (let step = 0; step < substeps; step++) {
     const isLast = step === substeps - 1;
-    const target = isLast
-      ? next
-      : step === 0
-        ? scratch1!
-        : (step % 2 === 1 ? scratch2 ?? scratch1! : scratch1!);
+    const target = isLast ? next : (step % 2 === 0 ? scratch1 : scratch2);
     performStep(source, target, stepDt);
     if (!isLast) source = target;
   }
 
+  // ppl entering the scene, more ppl = more chaos, bet
   let entryCount = 0;
-  for (let i = 0; i < N; i++) {
-    if (cells[i] === CellType.ENTRY) entryCount++;
-  }
+  for (let i = 0; i < N; i++) if (cells[i] === CellType.ENTRY) entryCount++;
   const perEntryFlow = entryCount > 0 ? (entryRate * dt) / entryCount : 0;
 
   for (let i = 0; i < N; i++) {
@@ -250,6 +245,7 @@ export function stepDensityV3(
   }
 }
 
+// compute risk so we know if we r cooked
 export function computeRiskV3(
   rho: Float64Array,
   vx: Float64Array,
@@ -262,7 +258,6 @@ export function computeRiskV3(
   const {
     rhoMax,
     rhoCrit,
-    epsilon,
     riskAlpha,
     riskDelta,
     riskGamma,
@@ -291,11 +286,13 @@ export function computeRiskV3(
     const speed = Math.hypot(vx[i], vy[i]);
     const d = distanceToExit[i];
 
+    // different types of risk, no cap
     const densityRisk = Math.min(1, r / rhoMax);
     const congestionRisk = r >= rhoCrit ? Math.min(1, (r - rhoCrit) / Math.max(1, rhoMax - rhoCrit)) : 0;
     const distanceRisk = d >= 1e8 ? 1 : Math.min(1, Math.max(0, d / maxDistance));
     const speedRisk = 1 - Math.min(1, speed / maxSpeed);
 
+    // final raw risk calculation, fr fr
     const rawRisk = (
       riskAlpha * densityRisk +
       riskDelta * distanceRisk +

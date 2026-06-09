@@ -10,3 +10,4 @@ export { AnalyticsCards } from './AnalyticsCards';
 export { AlertsPanel } from './AlertsPanel';
 export { SimulationCanvas } from './SimulationCanvas';
 export { ControlPanel } from './ControlPanel';
+export { FloatingPlaybackDock } from './FloatingPlaybackDock';

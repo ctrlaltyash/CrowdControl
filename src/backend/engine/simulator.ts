@@ -69,9 +69,7 @@ export class CrowdSimulator {
     }
   }
 
-  private loop = () => {
-    if (!this.state.running) return;
-
+  public step() {
     try {
       const STEPS = 8;
       for (let i = 0; i < STEPS; i++) {
@@ -147,15 +145,23 @@ export class CrowdSimulator {
       );
 
       if (this.onUpdate) this.onUpdate(this.state);
-      if (this.state.running) {
-        this.animId = requestAnimationFrame(this.loop);
-      } else if (this.onFinished) {
-        this.onFinished();
-      }
+      return true;
     } catch (err) {
       console.error('Simulator Error:', err);
       this.stop();
       if (this.onFinished) this.onFinished();
+      return false;
+    }
+  }
+
+  private loop = () => {
+    if (!this.state.running) return;
+    const success = this.step();
+    
+    if (success && this.state.running) {
+      this.animId = requestAnimationFrame(this.loop);
+    } else if (this.onFinished) {
+      this.onFinished();
     }
   };
 }

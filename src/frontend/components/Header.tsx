@@ -1,11 +1,7 @@
-/* ─────────────────────────────────────────────────────────────
-   Header Component - Premium Navigation & Branding
-   ───────────────────────────────────────────────────────────── */
-
+// This is our navbar. Floating at the top, keeping us grounded.
 import { useEffect, useRef } from 'react';
-import { Menu, X, Settings, Bell } from 'lucide-react';
+import { Menu, X, ShieldAlert, Cpu } from 'lucide-react';
 import gsap from 'gsap';
-import { setupButtonRipple, setupMagneticHover } from '../utils/gsapAnimations';
 
 interface HeaderProps {
   activeSection: string;
@@ -14,101 +10,92 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
+// Hardcoding the routes. Array mapping > repeating code.
 const HEADER_TABS = [
-  { id: 'canvas', label: 'Simulation' },
-  { id: 'formulas', label: 'Formulas' },
-  { id: 'analytics', label: 'Analytics' },
-  { id: 'alerts', label: 'Alerts' },
-  { id: 'export', label: 'Export' },
+  { id: 'canvas', label: 'Sim Canvas' },
+  { id: 'formulas', label: 'Math Engine' },
+  { id: 'analytics', label: 'Telemetry' },
+  { id: 'alerts', label: 'Threats' },
+  { id: 'export', label: 'Data Dump' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange, onMenuToggle, isMenuOpen }) => {
   const headerRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Smooth drop-in animation when the app loads
   useEffect(() => {
-    if (headerRef.current) {
-      gsap.fromTo(
-        headerRef.current,
-        { y: -120, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    const cleanups: Array<() => void> = [];
-
-    buttonRefs.current.forEach((button) => {
-      if (!button) return;
-      setupButtonRipple(button);
-      const cleanup = setupMagneticHover(button, 16);
-      cleanups.push(cleanup);
-    });
-
-    return () => {
-      cleanups.forEach((fn) => fn());
-    };
+    const ctx = gsap.context(() => {
+      if (headerRef.current) {
+        gsap.fromTo(
+          headerRef.current,
+          { y: -100, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }
+        );
+      }
+    }, headerRef);
+    
+    return () => ctx.revert();
   }, []);
 
   return (
     <header
       data-header
       ref={headerRef}
-      className="fixed top-0 left-0 right-0 z-50 border-b border-indigo-glow/15 bg-obsdian-950/85 backdrop-blur-xl shadow-glow-lg"
+      className="fixed top-0 left-0 right-0 z-50 bg-void-950/80 backdrop-blur-2xl border-b border-white/5 shadow-glass"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-3xl bg-gradient-to-br from-indigo-electric to-cyan-cyber shadow-glow-lg flex items-center justify-center text-sm font-extrabold text-white">
-              CS
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-text-primary">CrowdSim</p>
-              <p className="text-xs text-text-muted">Stampede Prevention & Safety Analytics</p>
-            </div>
+      <div className="max-w-screen-2xl mx-auto px-6 h-20 flex items-center justify-between">
+        
+        {/* Brand Logo Area */}
+        <div 
+          className="flex items-center gap-4 cursor-pointer group"
+          onClick={() => onSectionChange('hero')}
+        >
+          <div className="w-12 h-12 rounded-xl bg-void-900 border border-white/10 flex items-center justify-center group-hover:border-neon-cyan transition-colors shadow-glow-cyan">
+            <ShieldAlert size={24} className="text-neon-cyan" />
           </div>
-
-          <nav className="hidden lg:flex items-center gap-2">
-            {HEADER_TABS.map((tab, index) => (
-              <button
-                key={tab.id}
-                ref={(el) => { buttonRefs.current[index] = el; }}
-                onClick={() => onSectionChange(tab.id)}
-                className={`nav-pill ${activeSection === tab.id ? 'bg-cyan-cyber/15 border-cyan-cyber/40 text-cyan-cyber' : 'text-text-secondary hover:text-text-primary hover:bg-white/5'}`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <button
-              ref={(el) => { buttonRefs.current[HEADER_TABS.length] = el; }}
-              className="btn-icon"
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 shadow-glow" />
-            </button>
-
-            <button
-              ref={(el) => { buttonRefs.current[HEADER_TABS.length + 1] = el; }}
-              className="btn-icon hidden sm:flex"
-              aria-label="Settings"
-            >
-              <Settings size={18} />
-            </button>
-
-            <button
-              onClick={onMenuToggle}
-              className="btn-icon lg:hidden"
-              aria-label="Toggle navigation"
-            >
-              {isMenuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
+          <div>
+            <h1 className="text-xl font-display font-bold text-white tracking-wide">
+              Crowd<span className="text-neon-cyan">Sim</span>
+            </h1>
+            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-mono">
+              v4.2 Engine
+            </p>
           </div>
         </div>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-2 bg-void-900/50 p-1.5 rounded-2xl border border-white/5">
+          {HEADER_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onSectionChange(tab.id)}
+              className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                activeSection === tab.id 
+                  ? 'bg-neon-pink/20 text-neon-pink shadow-glow-pink' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Right side controls */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-neon-green bg-neon-green/10 px-3 py-1.5 rounded-lg border border-neon-green/20">
+            <Cpu size={14} />
+            System Online
+          </div>
+          
+          {/* Mobile hamburger menu */}
+          <button
+            onClick={onMenuToggle}
+            className="lg:hidden p-2 rounded-xl bg-void-900 border border-white/10 text-white"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+        
       </div>
     </header>
   );

@@ -1,151 +1,183 @@
-/* ─────────────────────────────────────────────────────────────
-   Analytics Cards Component - Real-time Metrics Display
-   ───────────────────────────────────────────────────────────── */
-
-import { useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+// Pumping out the raw numbers. We don't do vibes-based safety here, strictly data.
+import { useEffect, useRef, useMemo } from 'react';
+import { Activity, Shield, Users, Zap, AlertTriangle } from 'lucide-react';
 import gsap from 'gsap';
-import { MOCK_METRICS } from '../utils/mockData';
+import { SimulatorState } from '../../backend/engine/types';
 
 interface AnalyticsCardsProps {
-  title?: string;
+  state: SimulatorState | null;
 }
 
-export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({
-  title = 'Live Metrics',
-}) => {
+export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  useEffect(() => {
-    // Animate container
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
-    );
-  }, []);
+  // Crunching the numbers from the simulation state array
+  const metrics = useMemo(() => {
+    if (!state) return [];
+    
+    // Summing up density to get the average
+    const totalRho = state.rho.reduce((a, b) => a + b, 0);
+    const avgDensity = totalRho / state.rho.length;
+    
+    // Finding the spiciest spot on the map
+    const maxDensity = Math.max(...Array.from(state.rho));
+    
+    // Risk is calculated between 0 and 1, we turn it into a percentage
+    const totalRisk = state.risk.reduce((a, b) => a + b, 0);
+    const avgRisk = (totalRisk / state.risk.length) * 100;
 
-  useEffect(() => {
-    // Stagger cards
-    gsap.to(cardsRef.current, {
-      opacity: 1,
-      y: 0,
-      duration: 0.6,
-      stagger: 0.08,
-      ease: 'back.out',
-    });
-  }, []);
-
-  useEffect(() => {
-    // Setup hover animations
-    cardsRef.current.forEach((card) => {
-      if (card) {
-        card.addEventListener('mouseenter', () => {
-          gsap.to(card, {
-            scale: 1.05,
-            y: -8,
-            duration: 0.3,
-            ease: 'power2.out',
-          });
-        });
-
-        card.addEventListener('mouseleave', () => {
-          gsap.to(card, {
-            scale: 1,
-            y: 0,
-            duration: 0.3,
-            ease: 'power2.out',
-          });
-        });
+    return [
+      {
+        label: 'Average Density',
+        value: avgDensity.toFixed(2),
+        unit: 'p/m²',
+        icon: Users,
+        color: 'text-neon-cyan',
+        border: 'group-hover:border-neon-cyan',
+        bg: 'bg-neon-cyan',
+        progress: (avgDensity / state.params.rhoMax) * 100
+      },
+      {
+        label: 'Peak Density',
+        value: maxDensity.toFixed(2),
+        unit: 'p/m²',
+        icon: Activity,
+        color: 'text-hazard-crit',
+        border: 'group-hover:border-hazard-crit',
+        bg: 'bg-hazard-crit',
+        progress: (maxDensity / state.params.rhoMax) * 100
+      },
+      {
+        label: 'Composite Risk',
+        value: avgRisk.toFixed(1),
+        unit: '%',
+        icon: AlertTriangle,
+        color: avgRisk > 60 ? 'text-hazard-crit' : avgRisk > 30 ? 'text-hazard-mid' : 'text-neon-green',
+        border: avgRisk > 60 ? 'group-hover:border-hazard-crit' : avgRisk > 30 ? 'group-hover:border-hazard-mid' : 'group-hover:border-neon-green',
+        bg: avgRisk > 60 ? 'bg-hazard-crit' : avgRisk > 30 ? 'bg-hazard-mid' : 'bg-neon-green',
+        progress: avgRisk
+      },
+      {
+        label: 'AI Mitigation Blocks',
+        value: state.cells.filter(c => c === 4).length, // 4 is MITIGATION cell type
+        unit: 'active',
+        icon: Shield,
+        color: 'text-neon-pink',
+        border: 'group-hover:border-neon-pink',
+        bg: 'bg-neon-pink',
+        progress: 100 // Full bar if it exists
+      },
+      {
+        label: 'Compute Cycles',
+        value: state.stepCount,
+        unit: 'ticks',
+        icon: Zap,
+        color: 'text-neon-purple',
+        border: 'group-hover:border-neon-purple',
+        bg: 'bg-neon-purple',
+      },
+      {
+        label: 'Safety Score',
+        value: Math.max(0, 100 - avgRisk).toFixed(0),
+        unit: '/ 100',
+        icon: Shield,
+        color: 'text-neon-green',
+        border: 'group-hover:border-neon-green',
+        bg: 'bg-neon-green',
+        progress: 100 - avgRisk
       }
-    });
-  }, []);
+    ];
+  }, [state]);
 
-  const getTrendColor = (trend?: string) => {
-    if (trend === 'up') return 'text-red-500';
-    if (trend === 'down') return 'text-emerald-math';
-    return 'text-text-muted';
-  };
+  // Entrance animation and staggering the cards
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        containerRef.current,
+        { opacity: 0, y: 40 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+      );
 
-  const getTrendIcon = (trend?: string) => {
-    if (trend === 'up') return <TrendingUp size={16} className="text-red-500" />;
-    if (trend === 'down')
-      return <TrendingDown size={16} className="text-emerald-math" />;
-    return <Minus size={16} className="text-text-muted" />;
-  };
+      gsap.to(cardsRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        stagger: 0.08,
+        ease: 'back.out(1.5)',
+      });
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []); // Only run once on mount
 
   return (
-    <section ref={containerRef} className="w-full py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gradient-emerald mb-2">
-            {title}
-          </h2>
-          <p className="text-text-muted text-sm">
-            Real-time statistics from active simulation
+    <section ref={containerRef} className="w-full">
+      <div className="mb-8">
+        <h2 className="text-3xl font-display font-bold text-white mb-2">
+          Telemetry Data
+        </h2>
+        <p className="text-gray-400 text-sm">
+          Computational fluid dynamics (CFD) diagnostics streaming in real-time. No cap.
+        </p>
+      </div>
+
+      {!state ? (
+        <div className="glass-card p-12 text-center border-dashed border-white/20">
+          <p className="text-gray-400 font-mono uppercase tracking-widest">
+            Awaiting Simulation Data...
           </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {metrics.map((metric, index) => {
+            const Icon = metric.icon;
+            return (
+              <div
+                key={metric.label}
+                ref={(el) => { cardsRef.current[index] = el; }}
+                className={`glass-card p-6 border border-white/5 transition-all duration-300 group opacity-0 translate-y-4 hover:bg-void-800 ${metric.border}`}
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <div className="p-3 rounded-xl bg-void-950 border border-white/5 transition-colors">
+                    <Icon size={24} className={metric.color} />
+                  </div>
+                  {/* Subtle pulsing dot to show it's live data */}
+                  <div className="flex items-center gap-2 bg-void-950 px-2 py-1 rounded-md border border-white/5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span>
+                    <span className="text-[10px] font-mono text-gray-500 uppercase">Live</span>
+                  </div>
+                </div>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_METRICS.map((metric, index) => (
-            <div
-              key={metric.label}
-              ref={(el) => { cardsRef.current[index] = el; }}
-              className="card-premium p-6 cursor-pointer transition-all duration-300"
-            >
-              {/* Header with Trend */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
                     {metric.label}
                   </p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-text-primary">
+                    <span className="text-4xl font-display font-black text-white">
                       {metric.value}
                     </span>
                     {metric.unit && (
-                      <span className="text-sm text-text-muted">{metric.unit}</span>
+                      <span className="text-sm font-medium text-gray-500">{metric.unit}</span>
                     )}
                   </div>
                 </div>
-                {metric.trend && (
-                  <div
-                    className={`flex items-center gap-1 ${getTrendColor(metric.trend)}`}
-                  >
-                    {getTrendIcon(metric.trend)}
-                    {metric.trendPercent && (
-                      <span className="text-sm font-semibold">
-                        {Math.abs(metric.trendPercent)}%
-                      </span>
-                    )}
+
+                {metric.progress !== undefined && (
+                  <div className="mt-6">
+                    <div className="w-full h-1.5 bg-void-950 rounded-full overflow-hidden border border-white/5">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ${metric.bg}`}
+                        style={{ width: `${Math.min(metric.progress, 100)}%` }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* Progress Bar */}
-              {typeof metric.value === 'number' && metric.value < 100 && (
-                <div className="w-full h-1.5 bg-obsdian-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-electric to-cyan-cyber rounded-full"
-                    style={{
-                      width: `${Math.min(metric.value as number, 100)}%`,
-                    }}
-                  ></div>
-                </div>
-              )}
-
-              {/* Status Indicator */}
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-math animate-pulse"></div>
-                <span className="text-xs text-text-muted">Live</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
+      )}
     </section>
   );
 };

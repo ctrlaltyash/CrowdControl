@@ -1,9 +1,6 @@
-/* ─────────────────────────────────────────────────────────────
-   Hero Section Component - Landing Area with Premium Aesthetics
-   ───────────────────────────────────────────────────────────── */
-
+// Fr fr, this is the main landing page of the app. Gotta make a good impression.
 import { useEffect, useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { Sparkles, Terminal } from 'lucide-react';
 import gsap from 'gsap';
 
 interface HeroProps {
@@ -16,121 +13,106 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
 
+  // GSAP animation hook. This is what gives us the buttery entrance.
   useEffect(() => {
-    // Animate hero elements on mount
-    const timeline = gsap.timeline();
+    const ctx = gsap.context(() => {
+      const timeline = gsap.timeline();
 
-    // Fade in container
-    timeline.fromTo(
-      containerRef.current,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.8 }
-    );
-
-    // Animate title reveal
-    if (titleRef.current) {
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 32 },
-        { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }
+      // Fade in the container
+      timeline.fromTo(
+        containerRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 0.5 }
       );
-    }
 
-    // Animate subtitle
-    if (subtitleRef.current) {
-      gsap.fromTo(
-        subtitleRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.6, delay: 0.5, ease: 'power3.out' }
-      );
-    }
+      // Slide up the title with some swagger
+      if (titleRef.current) {
+        timeline.fromTo(
+          titleRef.current,
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, duration: 0.8, ease: 'back.out(1.5)' }
+        );
+      }
 
-    // Animate CTA button
-    if (ctaRef.current) {
-      gsap.fromTo(
-        ctaRef.current,
-        { opacity: 0, scale: 0.9 },
-        { opacity: 1, scale: 1, duration: 0.6, delay: 0.7, ease: 'back.out' }
-      );
-    }
+      // Subtitle sneaks in right after
+      if (subtitleRef.current) {
+        timeline.fromTo(
+          subtitleRef.current,
+          { opacity: 0, y: 20 },
+          { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
+          '-=0.6' // Offset so it overlaps the title animation
+        );
+      }
+
+      // The CTA button pops in
+      if (ctaRef.current) {
+        timeline.fromTo(
+          ctaRef.current,
+          { opacity: 0, scale: 0.8 },
+          { opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(2)' },
+          '-=0.2'
+        );
+      }
+    }, containerRef);
+
+    return () => ctx.revert();
   }, []);
 
   return (
     <section
       ref={containerRef}
-      className="relative w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-obsdian-950 via-obsdian-900 to-obsdian-950 overflow-hidden pt-16"
+      className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20"
     >
-      {/* Background Elements */}
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-electric/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-cyber/10 rounded-full blur-3xl"></div>
+      {/* Background glow orbs because solid colors are mid */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[20%] left-[20%] w-[500px] h-[500px] bg-neon-pink/10 rounded-full blur-[120px] mix-blend-screen" />
+        <div className="absolute bottom-[10%] right-[15%] w-[600px] h-[600px] bg-neon-cyan/10 rounded-full blur-[150px] mix-blend-screen" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Title */}
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+        {/* The big boy title */}
         <h1
           ref={titleRef}
-          className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight"
+          className="text-6xl sm:text-7xl lg:text-8xl font-display font-black tracking-tighter mb-8 text-white drop-shadow-2xl"
         >
-          <span className="text-gradient-indigo">Crowd Safety</span>
-          <span className="block text-text-primary">Redefined</span>
+          Predict.<br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan animate-shimmer">
+            Prevent. Protect.
+          </span>
         </h1>
 
-        {/* Subtitle */}
+        {/* The lore / explanation */}
         <p
           ref={subtitleRef}
-          className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-8 leading-relaxed"
+          className="text-lg sm:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 font-medium leading-relaxed"
         >
-          Advanced fluid dynamics simulation with real-time risk assessment and
-          AI-powered mitigation strategies for safer crowd management.
+          High-fidelity fluid dynamics engine for real-time crowd safety telemetry. 
+          Identify crush vectors before they happen with our predictive AI mitigation matrix.
+          DIs is the future of infrastructure safety.
         </p>
 
-        {/* Features Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-12 text-sm">
-          <div className="bg-indigo-electric/10 border border-indigo-electric/30 rounded-lg p-3">
-            <p className="font-semibold text-indigo-electric mb-1">Mathematical</p>
-            <p className="text-text-muted">Physics-based simulation</p>
-          </div>
-          <div className="bg-cyan-cyber/10 border border-cyan-cyber/30 rounded-lg p-3">
-            <p className="font-semibold text-cyan-cyber mb-1">Real-time</p>
-            <p className="text-text-muted">Live analytics & alerts</p>
-          </div>
-          <div className="bg-emerald-math/10 border border-emerald-math/30 rounded-lg p-3">
-            <p className="font-semibold text-emerald-math mb-1">Intelligent</p>
-            <p className="text-text-muted">AI-driven prevention</p>
-          </div>
-        </div>
-
-        {/* CTA Button */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {/* Call to Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           <button
             ref={ctaRef}
             onClick={onGetStarted}
-            className="btn-primary flex items-center justify-center gap-2 text-lg px-8 py-4 group relative overflow-hidden"
+            className="btn-neon-pink text-lg px-20 py-5 flex items-center gap-5 w-full sm:w-auto"
           >
-            <span>Launch Simulation</span>
-            <ArrowRight
-              size={20}
-              className="group-hover:translate-x-2 transition-transform"
-            />
+            <Sparkles size={30} />
+            Initialize Engine
           </button>
-          <button className="btn-secondary flex items-center justify-center px-8 py-4 text-lg">
-            View Documentation
+          
+          <button className="btn-ghost text-lg px-20 py-5 flex items-center gap-5 w-full sm:w-auto">
+            <Terminal size={24} />
+            View Docs
           </button>
         </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-xs text-text-muted uppercase tracking-widest">
-              Scroll to explore
-            </span>
-            <div className="w-6 h-10 border border-indigo-glow/40 rounded-full flex items-center justify-center">
-              <div className="w-1 h-2 bg-indigo-glow rounded-full animate-pulse"></div>
-            </div>
-          </div>
-        </div>
+      </div>
+      
+      {/* Scroll hint at the bottom */}
+      <div className="absolute bottom-12 text-gray-500 text-sm font-semibold tracking-widest uppercase flex flex-col items-center gap-3 animate-bounce">
+        <span>System Ready</span>
+        <div className="w-1 h-8 bg-gradient-to-b from-neon-cyan to-transparent rounded-full" />
       </div>
     </section>
   );
