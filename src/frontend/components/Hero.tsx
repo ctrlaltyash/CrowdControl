@@ -1,31 +1,36 @@
 // Fr fr, this is the main landing page of the app. Gotta make a good impression.
+// Lowkey importing all the cool stuff we need for this vibe.
 import { useEffect, useRef } from 'react';
 import { Sparkles, Terminal } from 'lucide-react';
 import gsap from 'gsap';
 
+// Defining our props interface, no cap.
 interface HeroProps {
   onGetStarted?: () => void;
 }
 
+// This is the main Hero component, it's the GOAT of landing sections.
 export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
+  // Using refs to grab these elements later for some sick animations.
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
 
   // GSAP animation hook. This is what gives us the buttery entrance.
+  // It's literally giving main character energy.
   useEffect(() => {
     const ctx = gsap.context(() => {
       const timeline = gsap.timeline();
 
-      // Fade in the container
+      // Fade in the container, it's lookin' clean.
       timeline.fromTo(
         containerRef.current,
         { opacity: 0 },
         { opacity: 1, duration: 0.5 }
       );
 
-      // Slide up the title with some swagger
+      // Slide up the title with some swagger. Total rizz.
       if (titleRef.current) {
         timeline.fromTo(
           titleRef.current,
@@ -34,7 +39,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
         );
       }
 
-      // Subtitle sneaks in right after
+      // Subtitle sneaks in right after. It's lowkey important.
       if (subtitleRef.current) {
         timeline.fromTo(
           subtitleRef.current,
@@ -44,7 +49,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
         );
       }
 
-      // The CTA button pops in
+      // The CTA button pops in. Click it or u mid.
       if (ctaRef.current) {
         timeline.fromTo(
           ctaRef.current,
@@ -55,22 +60,25 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
       }
     }, containerRef);
 
+    // Clean up the animations so we don't have a messy state. Sus.
     return () => ctx.revert();
   }, []);
 
   return (
+    // The main section wrapper. It's huge.
     <section
       ref={containerRef}
       className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20"
     >
       {/* Background glow orbs because solid colors are mid */}
+      {/* These colors are lowkey fire. */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[20%] left-[20%] w-[500px] h-[500px] bg-neon-pink/10 rounded-full blur-[120px] mix-blend-screen" />
         <div className="absolute bottom-[10%] right-[15%] w-[600px] h-[600px] bg-neon-cyan/10 rounded-full blur-[150px] mix-blend-screen" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-        {/* The big boy title */}
+        {/* The big boy title. It's the main attraction. */}
         <h1
           ref={titleRef}
           className="text-6xl sm:text-7xl lg:text-8xl font-display font-black tracking-tighter mb-8 text-white drop-shadow-2xl"
@@ -81,7 +89,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
           </span>
         </h1>
 
-        {/* The lore / explanation */}
+        {/* The lore / explanation. Don't skip dis part. */}
         <p
           ref={subtitleRef}
           className="text-lg sm:text-2xl text-gray-400 max-w-3xl mx-auto mb-12 font-medium leading-relaxed"
@@ -91,7 +99,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
           DIs is the future of infrastructure safety.
         </p>
 
-        {/* Call to Actions */}
+        {/* Call to Actions. Choose your fighter. */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
           <button
             ref={ctaRef}
@@ -109,7 +117,7 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
         </div>
       </div>
       
-      {/* Scroll hint at the bottom */}
+      {/* Scroll hint at the bottom. Keep it movin'. */}
       <div className="absolute bottom-12 text-gray-500 text-sm font-semibold tracking-widest uppercase flex flex-col items-center gap-3 animate-bounce">
         <span>System Ready</span>
         <div className="w-1 h-8 bg-gradient-to-b from-neon-cyan to-transparent rounded-full" />
@@ -117,3 +125,4 @@ export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
     </section>
   );
 };
+

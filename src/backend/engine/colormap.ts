@@ -55,7 +55,7 @@ function sampleStops(stops: RGB[], t: number): RGB {
   ];
 }
 
-// adding some spicy velocity tint, fr fr
+// adding some spicy velocity tint
 function applyVelocityTint(rgb: RGB, v: number): RGB {
   const velocityBoost = Math.min(1, v * 1.5);
   return [
@@ -77,7 +77,7 @@ export function densityToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   return [Math.round(r), Math.round(g), Math.round(b), Math.min(255, blendedAlpha)];
 }
 
-// risk to RGBA fluid - red is sus, bet
+// risk to RGBA fluid - red is sus
 export function riskToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   const colorIdx = Math.max(0, Math.min(1, Math.pow(t, 0.75) * 1.4));
   if (colorIdx <= 0.002) return [0, 0, 0, 0]; // safe vibe
@@ -100,7 +100,7 @@ export function riskToRGBAFluid(t: number, v: number, alpha = 255): RGBA {
   return [Math.round(boosted[0]), Math.round(boosted[1]), Math.round(boosted[2]), Math.min(255, blendedAlpha)];
 }
 
-// main render function - it's the goat
+// main render function... it's daaa goat
 export function renderHeatmapFluid(
   ctx: CanvasRenderingContext2D,
   rho: Float64Array,
@@ -134,7 +134,7 @@ export function renderHeatmapFluid(
   upsampleField(cellField, field, rows, cols, renderScale);
   upsampleField(cellSpeed, speedField, rows, cols, renderScale);
 
-  // blur it bc we want it fluid, fr
+  // blur it bc we want it fluid
   const blurRadius = Math.max(2, Math.round(renderScale * 1.25));
   blurField(field, cache.scratchField, renderCols, renderRows, blurRadius);
   blurField(speedField, cache.scratchSpeed, renderCols, renderRows, blurRadius);

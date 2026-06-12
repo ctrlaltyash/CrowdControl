@@ -9,27 +9,20 @@
    3) Choose interventions that steer flow instead of sealing it
    4) Validate the intervention against the local field
 
-   Assumptions:
-   - Grid is rows x cols
-   - rho holds normalized density [0..1+]
-   - vx / vy hold velocity components
-   - cells uses CellType enum values from ./types
-   - ENTRY / EXIT / WALL / MITIGATION / EMPTY exist in CellType
-   - HazardAlert is mutable enough to set `mitigated = true`
-
-   Drop-in goal:
-   - Keep the API familiar
-   - Make mitigation smarter and less destructive
+   fr dis module is like the traffic police but for crowds, no cap.
+   lowkey makin sure ppl don't get squished into a pancake.
    ---------------------------------------------------------------- */
 
 import { CellType, HazardAlert } from './types';
 
+// intervention type, bet
 export type Intervention = {
   r: number;
   c: number;
   type: CellType;
 };
 
+// hazard score metrics, seein how sus it is
 export type HazardScore = {
   density: number;
   flux: number;
@@ -42,6 +35,7 @@ export type MitigationOptions = {
   responsiveness?: number;
 };
 
+// scored hazard with extra rizz
 type ScoredHazard = HazardAlert & {
   density?: number;
   flux?: number;
@@ -53,6 +47,7 @@ type ScoredHazard = HazardAlert & {
 const EPS = 1e-9;
 const SAFE_ENTRY_RADIUS = 1;
 
+// tuning for mitigation, fr fr
 type MitigationTuning = {
   responsiveness: number;
   safeExitRadius: number;
@@ -65,6 +60,7 @@ type MitigationTuning = {
   allowSideGuide: boolean;
 };
 
+// gettin the vibe for tuning, no cap
 function getMitigationTuning(options?: MitigationOptions): MitigationTuning {
   const responsiveness = clamp(options?.responsiveness ?? 1, 0, 2);
   const passiveToAggressive = responsiveness / 2;
@@ -82,26 +78,32 @@ function getMitigationTuning(options?: MitigationOptions): MitigationTuning {
   };
 }
 
+// simple indexer, bet
 function idx(r: number, c: number, cols: number): number {
   return r * cols + c;
 }
 
+// clampin values like a boss
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
+// checkin if path is blocked, sus
 function isBlocked(cell: CellType): boolean {
   return cell === CellType.WALL || cell === CellType.MITIGATION;
 }
 
+// can we build here? fr
 function isBuildable(cell: CellType): boolean {
   return cell === CellType.EMPTY;
 }
 
+// distance math, no cap
 function hypot2(x: number, y: number): number {
   return Math.sqrt(x * x + y * y);
 }
 
+// mean field for that smooth flow, bet
 function meanFieldAt(
   fieldX: Float64Array,
   fieldY: Float64Array,
@@ -131,6 +133,7 @@ function meanFieldAt(
   return { x: sumX / count, y: sumY / count };
 }
 
+// sampling density like a vibe check
 function sampleDensity(
   rho: Float64Array,
   r: number,
@@ -155,6 +158,7 @@ function sampleDensity(
   return count ? sum / count : 0;
 }
 
+// local flux, checkin the flow rate, fr
 function localFlux(
   rho: Float64Array,
   vx: Float64Array,
@@ -182,6 +186,7 @@ function localFlux(
   return count ? sum / count : 0;
 }
 
+// stagnation check, if it's too high, it's mid
 function localStagnation(
   vx: Float64Array,
   vy: Float64Array,
@@ -210,6 +215,7 @@ function localStagnation(
   return 1 / (meanSpeed + 0.05);
 }
 
+// local pressure, squish factor 100
 function localPressure(
   rho: Float64Array,
   r: number,
@@ -227,6 +233,7 @@ function localPressure(
   return center + 0.35 * grad;
 }
 
+// scoring the hazard, total sus factor
 function scoreHazard(
   rho: Float64Array,
   vx: Float64Array,
@@ -251,6 +258,7 @@ function scoreHazard(
   return { density, flux, pressure, stagnation, score };
 }
 
+// findin where to go, fr fr
 function findExitDirection(
   cells: Uint8Array,
   rho: Float64Array,
@@ -291,6 +299,7 @@ function findExitDirection(
   return { dx: bestDx / mag, dy: bestDy / mag };
 }
 
+// checkin distance to cell types, bet
 function nearestCellTypeDistance(
   cells: Uint8Array,
   r: number,
@@ -313,6 +322,7 @@ function nearestCellTypeDistance(
   return best;
 }
 
+// countin blocked neighbors, lowkey helpful
 function countBlockedCardinalNeighbors(
   cells: Uint8Array,
   r: number,
@@ -343,6 +353,7 @@ function countBlockedCardinalNeighbors(
   return blocked;
 }
 
+// don't build a big blob, fr, it's mid
 function wouldCreateSolidBlock(
   cells: Uint8Array,
   r: number,
@@ -372,6 +383,7 @@ function wouldCreateSolidBlock(
   return false;
 }
 
+// keepin paths open so ppl don't get stuck, no cap
 function keepsEntryReachable(
   cells: Uint8Array,
   rows: number,
@@ -418,6 +430,7 @@ function keepsEntryReachable(
   return false;
 }
 
+// can we place it? vibe check passed?
 function canPlaceMitigation(
   cells: Uint8Array,
   r: number,
@@ -439,6 +452,7 @@ function canPlaceMitigation(
   return keepsEntryReachable(cells, rows, cols, pending, totalEntries, k);
 }
 
+// placing a line of deflectors, smooth flow, bet
 function placeDeflectorLine(
   cells: Uint8Array,
   r0: number,
@@ -476,6 +490,7 @@ function placeDeflectorLine(
   return mods;
 }
 
+// placing a gate to slow things down, fr fr
 function placeMeteringGate(
   cells: Uint8Array,
   r: number,
@@ -508,6 +523,7 @@ function placeMeteringGate(
   return mods;
 }
 
+// checkin if there's stuff nearby, don't overlap, fr
 function hasMitigationNearby(
   cells: Uint8Array,
   r: number,
@@ -531,6 +547,7 @@ function hasMitigationNearby(
 
 /**
  * Hazard detection: find cells that are in a bad state *before* full collapse.
+ * spotting dem hazards early, no cap.
  */
 export function detectHazards(
   rho: Float64Array,
@@ -599,6 +616,8 @@ export function detectHazards(
  * - Aim downstream of a hazard to create a bypass/funnel
  * - Use small guide rails rather than solid square blobs
  * - If a local hotspot has no direction, apply metering around entry
+ * 
+ * choosin the right play for each hazard, goat logic.
  */
 export function calculateIntervention(
   hazards: HazardAlert[],
@@ -708,6 +727,7 @@ export function calculateIntervention(
 /**
  * Apply modifications to the cell grid.
  * Useful if your simulation expects a direct mutation step.
+ * applyin dem mods to the grid, bet.
  */
 export function applyInterventions(
   cells: Uint8Array,
@@ -727,6 +747,7 @@ export function applyInterventions(
 /**
  * Closed-loop mitigation step.
  * Call this once per simulation tick.
+ * the big step, rizzing up the simulation.
  */
 export function mitigationStep(
   rho: Float64Array,
@@ -745,6 +766,7 @@ export function mitigationStep(
 
 /**
  * Optional utility: clear old mitigation cells if your system needs reset.
+ * clear the board, peace out.
  */
 export function clearMitigation(cells: Uint8Array, rows: number, cols: number): void {
   for (let i = 0; i < rows * cols; i++) {

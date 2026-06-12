@@ -5,6 +5,8 @@ import { buildBottleneckScenario, buildStadiumScenario, ScenarioResult } from '.
 import { runSimulationWithMetrics, SimulationMetrics } from '../src/backend/engine/metrics.ts';
 import { DEFAULT_PARAMS } from '../src/shared/simParams.ts';
 
+// dis script is how we get those juicy results
+// no cap it's gonna generate some fire charts
 const RESULTS_DIR = path.join(process.cwd(), 'results');
 const FIGURES_DIR = path.join(RESULTS_DIR, 'figures');
 
@@ -16,6 +18,7 @@ const scenarios: ScenarioResult[] = [
 type Rgb = [number, number, number];
 type RgbStop = readonly [number, number, number];
 
+// color vibes for density
 const densityStops = [
   [5, 15, 35],
   [0, 120, 190],
@@ -24,6 +27,7 @@ const densityStops = [
   [220, 40, 40],
 ] as const;
 
+// risk colors... watch out fr
 const riskStops = [
   [60, 70, 110],
   [0, 150, 230],
@@ -36,6 +40,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// samplin the colors like a beat
 function sampleStops(stops: readonly RgbStop[], t: number): Rgb {
   const n = stops.length - 1;
   const scaled = clamp(t, 0, 1) * n;
@@ -72,6 +77,7 @@ async function ensureOutputDirectories() {
   await mkdir(FIGURES_DIR, { recursive: true });
 }
 
+// drawin the heatmap... lookin aesthetic
 function drawHeatmap(
   grid: Float64Array,
   rows: number,
@@ -114,6 +120,7 @@ function drawHeatmap(
   return canvas;
 }
 
+// line chart for the stonks... i mean density
 function drawLineChart(
   values: number[],
   width: number,
@@ -210,6 +217,7 @@ async function saveMarkdownTable(rows: string[][], filePath: string) {
   await writeFile(filePath, md);
 }
 
+// render the whole scenario... stay focused
 async function renderScenario(scenario: ScenarioResult) {
   const scenarioKey = sanitizeFilename(scenario.label);
   const metrics = runSimulationWithMetrics(DEFAULT_PARAMS, new Uint8Array(scenario.cells), scenario.rows, scenario.cols, scenario.label, {
@@ -258,6 +266,7 @@ function formatNumber(value: number, digits = 3) {
   return value.toFixed(digits);
 }
 
+// main run function... let's get it
 async function run() {
   await ensureOutputDirectories();
 

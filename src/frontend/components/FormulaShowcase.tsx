@@ -10,25 +10,24 @@ export const FormulaShowcase: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Pop in the container and stagger the cards
+  // Pop in the container
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        containerRef.current,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
-      );
+    gsap.fromTo(
+      containerRef.current,
+      { opacity: 0, y: 40 },
+      { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }
+    );
+  }, []);
 
-      gsap.to(cardsRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        stagger: 0.1,
-        ease: 'back.out(1.5)',
-      });
-    }, containerRef);
-
-    return () => ctx.revert();
+  // Stagger the cards so they cascade in
+  useEffect(() => {
+    gsap.to(cardsRef.current, {
+      opacity: 1,
+      y: 0,
+      duration: 0.6,
+      stagger: 0.1,
+      ease: 'back.out(1.5)',
+    });
   }, []);
 
   return (
@@ -40,7 +39,7 @@ export const FormulaShowcase: React.FC = () => {
             The <span className="text-neon-cyan">Math</span> Engine
           </h2>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            We didn't just guess these crowd physics. This is the raw Navier-Stokes and risk calculus running under the hood. Respect the math.
+            We didn't just guess these crowd physics. This is the raw Laplace and risk calculus running under the hood. Respect the math.
           </p>
         </div>
 

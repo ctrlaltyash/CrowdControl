@@ -1,11 +1,14 @@
 // The Sidebar. This is where all the knobs and dials live. Big control panel energy.
+// Lowkey the brain of the operation. Don't touch if u don't know the vibes.
 import { useEffect, useRef } from 'react';
 import { Settings2, Grid, Activity, Droplet, ShieldAlert } from 'lucide-react';
 import gsap from 'gsap';
 import type { SimStatus } from '../../backend/engine/types';
 
+// Types for our drawin' tools. Pick your weapon.
 type DrawTool = 'wall' | 'entry' | 'exit' | 'erase';
 
+// Props interface, no cap. Everything we need to talk to the rest of the app.
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
@@ -40,6 +43,7 @@ interface SidebarProps {
   elapsed: number;
 }
 
+// All the tools we can use to mess with the map.
 const DRAW_TOOLS: Array<[DrawTool, string]> = [
   ['wall', 'Wall'],
   ['entry', 'Spawner'],
@@ -47,6 +51,7 @@ const DRAW_TOOLS: Array<[DrawTool, string]> = [
   ['erase', 'Eraser'],
 ];
 
+// The Sidebar component itself. It's giving "I'm in charge here".
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   gridSize,
@@ -74,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Sliding in from the left on load
+  // Sliding in from the left on load. Buttery smooth, fr.
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!sidebarRef.current) return;
@@ -85,10 +90,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       );
     }, sidebarRef);
 
+    // Clean up or it's sus.
     return () => ctx.revert();
   }, []);
 
   return (
+    // The main container for the sidebar. It's fixed and lookin' sharp.
     <aside
       data-sidebar
       ref={sidebarRef}
@@ -98,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="p-5 space-y-6">
         
-        {/* Core Settings Block */}
+        {/* Core Settings Block. The main course. */}
         <div className="glass-card p-5" data-sidebar-card>
           <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
             <Settings2 size={18} className="text-neon-cyan" />
@@ -106,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           
           <div className="space-y-5">
-            {/* Grid Size Slider */}
+            {/* Grid Size Slider. How much detail do u want? */}
             <div>
               <div className="flex justify-between mb-1">
                 <label className="slider-label">Resolution</label>
@@ -124,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
 
-            {/* FPS Slider */}
+            {/* FPS Slider. Keep it smooth or keep it laggy. */}
             <div>
               <div className="flex justify-between mb-1">
                 <label className="slider-label">Tick Rate</label>
@@ -144,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* View Mode Toggle */}
+        {/* View Mode Toggle. Change your perspective. */}
         <div className="glass-card p-5" data-sidebar-card>
           <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
             <Activity size={18} className="text-neon-pink" />
@@ -173,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Physics Variables */}
+        {/* Physics Variables. Messin' with the laws of nature. */}
         <div className="glass-card p-5" data-sidebar-card>
           <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
             <Droplet size={18} className="text-neon-green" />
@@ -181,6 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           <div className="space-y-5">
+            {/* Spawn Rate Slider. How many ppl u want? */}
             <div>
               <div className="flex justify-between mb-1">
                 <label className="slider-label">Spawn Rate</label>
@@ -198,6 +206,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
 
+            {/* Panic Pressure Slider. It's getting hot in here. */}
             <div>
               <div className="flex justify-between mb-1">
                 <label className="slider-label">Panic Pressure</label>
@@ -215,6 +224,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
             
+            {/* Drain Efficiency Slider. How fast they leave. */}
             <div>
               <div className="flex justify-between mb-1">
                 <label className="slider-label">Drain Efficiency</label>
@@ -234,7 +244,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* AI Defense */}
+        {/* AI Defense. Let the machines handle it. */}
         <div className="glass-card p-5" data-sidebar-card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-white font-display font-bold">
@@ -253,13 +263,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Level Editor */}
+        {/* Level Editor. Build your dream map. */}
         <div className="glass-card p-5" data-sidebar-card>
           <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
             <Grid size={18} className="text-gray-400" />
-            <h3>Level Architect</h3>
+            <h3>Map Architech</h3>
           </div>
 
+          {/* Draw Tool Buttons. Choose your brush. */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             {DRAW_TOOLS.map(([tool, label]) => (
               <button
@@ -276,6 +287,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ))}
           </div>
           
+          {/* Brush Scale Slider. How big u want it? */}
           <div className="mb-4">
             <div className="flex justify-between mb-1">
               <label className="slider-label">Brush Scale</label>
@@ -292,6 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             />
           </div>
 
+          {/* Scenarios and nukin'. */}
           <div className="space-y-2 pt-4 border-t border-white/5">
             <p className="slider-label mb-2">Scenarios</p>
             {['bottleneck', 'stadium'].map((option) => (
@@ -308,6 +321,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             ))}
             
+            {/* Clear the whole thing. Big rip. */}
             <button
               onClick={onClearLayout}
               className="w-full py-2.5 mt-2 rounded-xl text-sm font-bold bg-hazard-crit/10 text-hazard-crit border border-hazard-crit/30 hover:bg-hazard-crit/20 transition-all"
@@ -322,3 +336,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+

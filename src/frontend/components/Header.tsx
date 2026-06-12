@@ -1,8 +1,9 @@
-// This is our navbar. Floating at the top, keeping us grounded.
+// Dis is our navbar fr. Floating at da top, keeping us grounded. No cap.
 import { useEffect, useRef } from 'react';
 import { Menu, X, ShieldAlert, Cpu } from 'lucide-react';
 import gsap from 'gsap';
 
+// props for da header, staying 100
 interface HeaderProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
@@ -10,7 +11,7 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
-// Hardcoding the routes. Array mapping > repeating code.
+// hardcoding da routes bc mapping > repeating code. real big brain energy.
 const HEADER_TABS = [
   { id: 'canvas', label: 'Sim Canvas' },
   { id: 'formulas', label: 'Math Engine' },
@@ -22,7 +23,7 @@ const HEADER_TABS = [
 export const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange, onMenuToggle, isMenuOpen }) => {
   const headerRef = useRef<HTMLDivElement>(null);
 
-  // Smooth drop-in animation when the app loads
+  // smooth drop-in animation when da app loads, real smooth slide
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (headerRef.current) {
@@ -45,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange, 
     >
       <div className="max-w-screen-2xl mx-auto px-6 h-20 flex items-center justify-between">
         
-        {/* Brand Logo Area */}
+        {/* brand logo area, group hover rizz included */}
         <div 
           className="flex items-center gap-4 cursor-pointer group"
           onClick={() => onSectionChange('hero')}
@@ -63,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange, 
           </div>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* desktop navigation, mapping thru tabs like a boss */}
         <nav className="hidden lg:flex items-center gap-2 bg-void-900/50 p-1.5 rounded-2xl border border-white/5">
           {HEADER_TABS.map((tab) => (
             <button
@@ -80,14 +81,14 @@ export const Header: React.FC<HeaderProps> = ({ activeSection, onSectionChange, 
           ))}
         </nav>
 
-        {/* Right side controls */}
+        {/* right side controls, system online status energy */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-neon-green bg-neon-green/10 px-3 py-1.5 rounded-lg border border-neon-green/20">
             <Cpu size={14} />
             System Online
           </div>
           
-          {/* Mobile hamburger menu */}
+          {/* mobile hamburger menu for dem small screens */}
           <button
             onClick={onMenuToggle}
             className="lg:hidden p-2 rounded-xl bg-void-900 border border-white/10 text-white"

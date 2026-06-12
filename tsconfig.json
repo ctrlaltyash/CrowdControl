@@ -1,7 +1,11 @@
 {
+  // The main TS config. It's the blueprint for our types, no cap.
   "files": [],
   "references": [
+    // Pointing to the app config. High key necessary.
     { "path": "./tsconfig.app.json" },
+    // Pointing to the node config. Lowkey for the backend/tools.
     { "path": "./tsconfig.node.json" }
   ]
 }
+

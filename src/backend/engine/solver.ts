@@ -4,14 +4,17 @@
    a smooth, physically consistent travel direction field.
    ───────────────────────────────────────────────────────────── */
 
+// lowkey importing cell types bc we need dat logic
 import { CellType } from './types';
 
+// dis interface is a whole vibe fr
 export interface DirectionField {
   vx: Float64Array;
   vy: Float64Array;
   dist: Float64Array;
 }
 
+// main function to compute da field, no cap
 export function computeDirectionField(
   cells: Uint8Array,
   rows: number,
@@ -21,10 +24,12 @@ export function computeDirectionField(
   const idx = (r: number, c: number) => r * cols + c;
   const phi = new Float64Array(N);
 
+  // initializing phi, exit is zero, others are one. trust the process
   for (let i = 0; i < N; i++) {
     phi[i] = cells[i] === CellType.EXIT ? 0 : 1;
   }
 
+  // grinding thru 1200 iters max, we stay on dat grind
   const maxIters = 1200;
   for (let iter = 0; iter < maxIters; iter++) {
     let maxDelta = 0;
@@ -32,6 +37,7 @@ export function computeDirectionField(
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const i = idx(r, c);
+        // if it's an exit or wall, it's mid, we skip
         if (cells[i] === CellType.EXIT || cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) {
           continue;
         }
@@ -39,6 +45,7 @@ export function computeDirectionField(
         let sum = 0;
         let count = 0;
 
+        // checking neighbors, they lowkey sus
         const neighbors = [
           [r - 1, c],
           [r + 1, c],
@@ -60,12 +67,14 @@ export function computeDirectionField(
           count += 1;
         }
 
+        // averaging stuff out, keepin it chill
         const nextPhi = sum / count;
         maxDelta = Math.max(maxDelta, Math.abs(nextPhi - phi[i]));
         phi[i] = nextPhi;
       }
     }
 
+    // if delta is smol, we out. facts.
     if (maxDelta < 1e-8) {
       break;
     }
@@ -74,6 +83,7 @@ export function computeDirectionField(
   const vx = new Float64Array(N);
   const vy = new Float64Array(N);
 
+  // time to calculate gradients, real rizz energy here
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = idx(r, c);
@@ -97,6 +107,7 @@ export function computeDirectionField(
         ? phi[down]
         : phi[i];
 
+      // math goes brrr
       const gx = -(phiRight - phiLeft) * 0.5;
       const gy = -(phiDown - phiUp) * 0.5;
       const length = Math.hypot(gx, gy);
@@ -107,6 +118,7 @@ export function computeDirectionField(
     }
   }
 
+  // setting up distance field, BFS is da goat
   const dist = new Float64Array(N).fill(1e9);
   const queue: number[] = [];
   for (let i = 0; i < N; i++) {
@@ -120,6 +132,7 @@ export function computeDirectionField(
   const dr = [-1, 1, 0, 0];
   const dc = [0, 0, -1, 1];
 
+  // running BFS like a boss
   while (head < queue.length) {
     const cur = queue[head++];
     const cr = Math.floor(cur / cols);
@@ -138,5 +151,6 @@ export function computeDirectionField(
     }
   }
 
+  // returning everything, we ate dat
   return { vx, vy, dist };
 }

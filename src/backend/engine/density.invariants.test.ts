@@ -1,31 +1,38 @@
-import assert from 'node:assert/strict';
+// testing invariants bc we don't want no buggy code, no cap
+import assert from 'assert';
 import { describe, it } from 'node:test';
 import { createSimParams, DEFAULT_PARAMS } from '../../shared/simParams.ts';
 import { stepDensityV3 } from './density.ts';
 import { computeDirectionField } from './solver.ts';
 import { CellType, type SimParams } from './types.ts';
 
+// grid size for testing, keeps it manageable fr
 const INVARIANT_GRID = Object.freeze({
   rows: 12,
   cols: 14,
 });
 
+// how many steps we taking? a lot.
 const MASS_CONSERVATION_STEPS = 48;
 const BOUNDS_STEPS = 80;
 const DETERMINISM_STEPS = 64;
 
+// tolerances bc floats be trippin
 const MASS_RELATIVE_TOLERANCE = 1e-10;
 const DENSITY_BOUND_TOLERANCE = 1e-12;
 const DETERMINISM_TOLERANCE = 0;
 
+// density setup vibes
 const INITIAL_DENSITY_BASE_FRACTION = 0.08;
 const INITIAL_DENSITY_VARIATION_FRACTION = 0.05;
 const DENSITY_PATTERN_PERIOD = 11;
 
+// making empty cells, clean slate energy
 function createEmptyCells(rows: number, cols: number): Uint8Array {
   return new Uint8Array(rows * cols);
 }
 
+// flow cells got dat entry and exit rizz
 function createFlowCells(rows: number, cols: number): Uint8Array {
   const cells = createEmptyCells(rows, cols);
   const midRow = Math.floor(rows / 2);
@@ -34,6 +41,7 @@ function createFlowCells(rows: number, cols: number): Uint8Array {
   return cells;
 }
 
+// filling it up with density juice
 function createControlledDensity(rows: number, cols: number, rhoMax: number): Float64Array {
   const rho = new Float64Array(rows * cols);
   const baseDensity = rhoMax * INITIAL_DENSITY_BASE_FRACTION;
@@ -49,12 +57,14 @@ function createControlledDensity(rows: number, cols: number, rhoMax: number): Fl
   return rho;
 }
 
+// adding it all up, counting da mass
 function sumDensity(rho: Float64Array): number {
   let total = 0;
   for (const value of rho) total += value;
   return total;
 }
 
+// taking a hike thru many steps
 function stepMany(
   initialDensity: Float64Array,
   cells: Uint8Array,
@@ -79,6 +89,7 @@ function stepMany(
   return curr;
 }
 
+// checking if density is acting sus (out of bounds)
 function assertDensityBounds(rho: Float64Array, params: SimParams, step: number): void {
   for (let i = 0; i < rho.length; i += 1) {
     const value = rho[i];
@@ -94,6 +105,7 @@ function assertDensityBounds(rho: Float64Array, params: SimParams, step: number)
   }
 }
 
+// comparing two fields, they gotta be twins
 function assertFieldsClose(actual: Float64Array, expected: Float64Array, tolerance: number): void {
   assert.equal(actual.length, expected.length);
 
@@ -106,7 +118,9 @@ function assertFieldsClose(actual: Float64Array, expected: Float64Array, toleran
   }
 }
 
+// main test block for density stepping
 describe('density stepping invariants', () => {
+  // mass conservation test, keep dat matter consistent
   it('approximately conserves mass without entries, exits, mitigation, or active flow sources', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -141,6 +155,7 @@ describe('density stepping invariants', () => {
     );
   });
 
+  // checking if density stays in its lane
   it('keeps density finite, non-negative, and bounded by rhoMax', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -156,6 +171,7 @@ describe('density stepping invariants', () => {
     });
   });
 
+  // relaxing spikes bc high pressure is mid
   it('spreads isolated pressure spikes instead of reinforcing them', () => {
     const params = createSimParams({
       rows: 9,
@@ -197,6 +213,7 @@ describe('density stepping invariants', () => {
     );
   });
 
+  // checking if overshoot reporting works fr
   it('accepts a diagnostics object and reports overshoot stats during density stepping', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -228,6 +245,7 @@ describe('density stepping invariants', () => {
     assert.equal(diagnostics.maxOvershootMagnitude, 0);
   });
 
+  // making sure it's the same every time, no RNG nonsense
   it('is deterministic for identical params, cells, and initial density', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,

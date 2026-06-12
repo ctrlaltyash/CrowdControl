@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "incremental": true,
+    "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2020",
-    "lib": ["ES2020"],
-    "types": ["node"],
+    "target": "ES2022",
+    "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
 
     /* Bundler mode */
+    // node vibes only
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
@@ -16,9 +16,11 @@
     "noEmit": true,
 
     /* Linting */
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    // keep it clean fr
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "scripts"]
+  "include": ["vite.config.ts"]
 }

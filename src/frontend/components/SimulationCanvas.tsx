@@ -1,8 +1,10 @@
 // The main stage where the simulation goes crazy. 
 // We attach the canvas here and let the WebGL/2D context go brrr.
+// Lowkey where the magic happens, fr.
 import { useRef, useEffect, type RefObject } from 'react';
 import gsap from 'gsap';
 
+// Props for the canvas, no cap. We need these to make it work.
 interface SimulationCanvasProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   width?: number;
@@ -12,6 +14,7 @@ interface SimulationCanvasProps {
   onPointerMove?: (event: React.PointerEvent<HTMLCanvasElement>) => void;
 }
 
+// The SimulationCanvas component. It's giving "high fidelity".
 export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   canvasRef,
   width = 700,
@@ -20,10 +23,11 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
   onPointerDown,
   onPointerMove,
 }) => {
+  // Refs for the container and status, so we can animate 'em.
   const containerRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
 
-  // Popping the canvas in with some swagger
+  // Popping the canvas in with some swagger. Total rizz.
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!containerRef.current) return;
@@ -34,10 +38,12 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
       );
     }, containerRef);
 
+    // Clean up or it's mid.
     return () => ctx.revert();
   }, []);
 
   // Make the status indicator pulse when running. It's giving heartbeat.
+  // This is lowkey satisfying to watch.
   useEffect(() => {
     if (!statusRef.current) return;
     const pulse = gsap.to(statusRef.current, {
@@ -57,17 +63,20 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
       gsap.to(statusRef.current, { boxShadow: 'none', duration: 0.1 });
     }
 
+    // Kill it when we're done. No ghosting.
     return () => {
       pulse.kill();
     };
   }, [isRunning]);
 
   return (
+    // The main wrapper for the canvas. It's a glass-card, very chic.
     <div ref={containerRef} className="glass-card p-6 flex min-h-[720px] flex-col border-white/5 relative group">
       
       {/* The actual canvas wrapper - rounding the corners because sharp corners are an L */}
       <div className="flex-1 min-h-[28rem] overflow-hidden rounded-[1.25rem] border border-white/10 bg-void-950 shadow-inner relative">
         
+        {/* The canvas itself. This is where the pixels live. */}
         <canvas
           ref={canvasRef}
           width={width}
@@ -78,7 +87,7 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
           style={{ display: 'block', width: '100%', height: '100%' }}
         />
         
-        {/* Subtle grid overlay to make it look techy */}
+        {/* Subtle grid overlay to make it look techy. It's giving cyberpunk. */}
         <div className="absolute inset-0 pointer-events-none opacity-1 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
       </div>
 
@@ -89,7 +98,7 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
           <span>Engine: CFD V4</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Status dot */}
+          {/* Status dot. Green means go, gray means no. */}
           <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-neon-green animate-pulse' : 'bg-gray-600'}`}></div>
           <span>{isRunning ? 'Rendering' : 'Standby'}</span>
         </div>
@@ -97,3 +106,4 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
     </div>
   );
 };
+

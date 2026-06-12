@@ -2,22 +2,17 @@
    Analytics Engine — Detects potential stampede precursors in the simulations
    This module evaluates density, speed and local pressure build-up to generate
    consistent early-warning hazard alerts.
-
-   fr dis engine is the goat at spotting when ppl r about to get crushed.
-   no cap, it checks if things r getting too sus in the crowd.
  ───────────────────────────────────────────────────────────── */
 
 import { HazardAlert, SimParams } from './types';
 
-// lowkey keeps values in check so they don't go wild, bet
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-const NEIGHBOR_RADIUS = 2; // how far we lookin for ops
-const MIN_SPEED_THRESHOLD = 0.12; // if u movin slower than dis, u mid
+const NEIGHBOR_RADIUS = 2;
+const MIN_SPEED_THRESHOLD = 0.12;
 
-// main function that rizzes up the hazard detection
 export function detectHazards(
   rho: Float64Array,
   vx: Float64Array,
@@ -28,16 +23,14 @@ export function detectHazards(
   step: number,
 ): HazardAlert[] {
   const alerts: HazardAlert[] = [];
-  const idx = (r: number, c: number) => r * cols + c; // standard mapping, no cap
+  const idx = (r: number, c: number) => r * cols + c;
   const baselineDensity = Math.max(params.rhoCrit * 0.6, params.rhoMax * 0.25);
   const motionThreshold = Math.max(MIN_SPEED_THRESHOLD, params.minSpeedFactor * 0.5);
 
-  // loopin thru the grid, lookin for sus behavior
   for (let r = NEIGHBOR_RADIUS; r < rows - NEIGHBOR_RADIUS; r += 1) {
     for (let c = NEIGHBOR_RADIUS; c < cols - NEIGHBOR_RADIUS; c += 1) {
       const centerIndex = idx(r, c);
       const centerDensity = Math.max(0, rho[centerIndex]);
-      // if it's empty, we chillin
       if (centerDensity < baselineDensity * 0.5) continue;
 
       let densitySum = 0;
@@ -45,7 +38,6 @@ export function detectHazards(
       let gradientSum = 0;
       let sampleCount = 0;
 
-      // checkin the neighborhood for the vibe check
       for (let dr = -NEIGHBOR_RADIUS; dr <= NEIGHBOR_RADIUS; dr++) {
         for (let dc = -NEIGHBOR_RADIUS; dc <= NEIGHBOR_RADIUS; dc++) {
           const rr = r + dr;
@@ -61,19 +53,17 @@ export function detectHazards(
         }
       }
 
-      if (sampleCount === 0) continue; // wat? how? sus.
+      if (sampleCount === 0) continue;
 
       const avgDensity = densitySum / sampleCount;
       const avgSpeed = speedSum / sampleCount;
       const avgGradient = gradientSum / sampleCount;
 
-      // math to see if we r cooked
       const densityScore = clamp(avgDensity / params.rhoMax, 0, 1);
       const compressionScore = clamp((avgDensity - params.rhoCrit) / Math.max(1, params.rhoMax - params.rhoCrit), 0, 1);
       const velocityPenalty = clamp(1 - avgSpeed / Math.max(0.001, motionThreshold), 0, 1);
       const pressureScore = clamp(avgGradient / Math.max(0.01, params.rhoCrit), 0, 1);
 
-      // final danger score, fr fr
       const dangerScore = clamp(
         densityScore * 0.45 +
         compressionScore * 0.25 +
@@ -83,16 +73,14 @@ export function detectHazards(
         1,
       );
 
-      // vibe checks for specific hazards
       const isDense = avgDensity >= baselineDensity;
       const isCompressed = avgDensity >= params.rhoCrit || compressionScore > 0.25;
       const isSlow = avgSpeed <= motionThreshold * 1.5;
       const isPressureSpike = pressureScore > 0.25;
       const isDangerous = dangerScore > 0.6 && (isDense || isCompressed || isSlow || isPressureSpike);
 
-      if (!isDangerous) continue; // we safe for now, bet
+      if (!isDangerous) continue;
 
-      // adding an alert bc it's getting too spicy
       alerts.push({
         id: `alert-${r}-${c}-${step}`,
         r,
@@ -105,8 +93,9 @@ export function detectHazards(
     }
   }
 
-  // send back the top 10 most cooked spots
   return alerts
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, 10);
 }
+
+

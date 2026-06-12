@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+// Tailwind config, no cap. This is where the style lives.
 export default {
   // fr fr, this tells tailwind where our files are at so it doesn't ghost our classes
   content: [
@@ -6,6 +7,7 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    // Extending the default theme because we built different.
     extend: {
       colors: {
         // this color palette is lowkey giving cyber-y2k vibes
@@ -21,6 +23,7 @@ export default {
           green: '#84cc16', // lime-500, goated for success
           purple: '#8b5cf6', // purple-500, aesthetic
         },
+        // Hazard levels, pick your fighter.
         hazard: {
           low: '#84cc16',    // green means go, W
           mid: '#eab308',    // yellow is kinda sus
@@ -29,13 +32,13 @@ export default {
         }
       },
       fontFamily: {
-        // we ditching the boring fonts for that clean aesthetic
+        // we ditching the boring fonts for that clean aesthetic. No mid fonts allowed.
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
         display: ['Space Grotesk', 'sans-serif'],
       },
       boxShadow: {
-        // glowing drop shadows because regular shadows are mid
+        // glowing drop shadows because regular shadows are mid.
         'glow-pink': '0 0 20px rgba(217, 70, 239, 0.4)',
         'glow-cyan': '0 0 20px rgba(6, 182, 212, 0.4)',
         'glow-green': '0 0 20px rgba(132, 204, 22, 0.4)',
@@ -43,5 +46,6 @@ export default {
       }
     },
   },
+  // Plugins are empty for now. Lowkey don't need 'em yet.
   plugins: [],
 }

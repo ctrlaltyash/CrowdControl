@@ -1,9 +1,10 @@
-// Pumping out the raw numbers. We don't do vibes-based safety here, strictly data.
+// Pumping out dem raw numbers fr. We don't do vibes-based safety here, strictly data. No cap.
 import { useEffect, useRef, useMemo } from 'react';
 import { Activity, Shield, Users, Zap, AlertTriangle } from 'lucide-react';
 import gsap from 'gsap';
 import { SimulatorState } from '../../backend/engine/types';
 
+// props for da analytics cards
 interface AnalyticsCardsProps {
   state: SimulatorState | null;
 }
@@ -12,18 +13,18 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Crunching the numbers from the simulation state array
+  // crunching da numbers from da simulation state array, real big brain energy
   const metrics = useMemo(() => {
     if (!state) return [];
     
-    // Summing up density to get the average
+    // summing up density juice to get da average
     const totalRho = state.rho.reduce((a, b) => a + b, 0);
     const avgDensity = totalRho / state.rho.length;
     
-    // Finding the spiciest spot on the map
+    // finding da spiciest spot on da map, it's wilding
     const maxDensity = Math.max(...Array.from(state.rho));
     
-    // Risk is calculated between 0 and 1, we turn it into a percentage
+    // risk is 0 to 1, turning it into a percentage fr
     const totalRisk = state.risk.reduce((a, b) => a + b, 0);
     const avgRisk = (totalRisk / state.risk.length) * 100;
 
@@ -60,13 +61,13 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
       },
       {
         label: 'AI Mitigation Blocks',
-        value: state.cells.filter(c => c === 4).length, // 4 is MITIGATION cell type
+        value: state.cells.filter(c => c === 4).length, // 4 is MITIGATION cell type, AI doing its thing
         unit: 'active',
         icon: Shield,
         color: 'text-neon-pink',
         border: 'group-hover:border-neon-pink',
         bg: 'bg-neon-pink',
-        progress: 100 // Full bar if it exists
+        progress: 100 // full bar if it exists
       },
       {
         label: 'Compute Cycles',
@@ -90,7 +91,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
     ];
   }, [state]);
 
-  // Entrance animation and staggering the cards
+  // making dem cards pop off with animations
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -109,7 +110,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []); // Only run once on mount
+  }, []); // only run once on mount
 
   return (
     <section ref={containerRef} className="w-full">
@@ -122,6 +123,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
         </p>
       </div>
 
+      {/* if no state, we waiting for dat juice */}
       {!state ? (
         <div className="glass-card p-12 text-center border-dashed border-white/20">
           <p className="text-gray-400 font-mono uppercase tracking-widest">
@@ -130,6 +132,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* mapping thru metrics like a boss */}
           {metrics.map((metric, index) => {
             const Icon = metric.icon;
             return (
@@ -142,7 +145,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
                   <div className="p-3 rounded-xl bg-void-950 border border-white/5 transition-colors">
                     <Icon size={24} className={metric.color} />
                   </div>
-                  {/* Subtle pulsing dot to show it's live data */}
+                  {/* subtle pulsing dot for dat live energy */}
                   <div className="flex items-center gap-2 bg-void-950 px-2 py-1 rounded-md border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse"></span>
                     <span className="text-[10px] font-mono text-gray-500 uppercase">Live</span>
@@ -163,6 +166,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
                   </div>
                 </div>
 
+                {/* progress bars for dat extra rizz */}
                 {metric.progress !== undefined && (
                   <div className="mt-6">
                     <div className="w-full h-1.5 bg-void-950 rounded-full overflow-hidden border border-white/5">

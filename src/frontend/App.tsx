@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback, type PointerEvent } from 'rea
 import gsap from 'gsap';
 
 // Backend imports - we ain't touching the backend, it's black-boxed magic 
+// lowkey dis backend is doin some heavy liftin
 import { renderHeatmapFluid } from '../backend/engine/colormap';
 import { buildBottleneckScenario, buildStadiumScenario } from '../backend/engine/scenarios';
 import { CellType, SimParams, SimStatus, SimulatorState, HazardAlert } from '../backend/engine/types';
@@ -11,6 +12,7 @@ import { CrowdSimulator } from '../backend/engine/simulator';
 import { DEFAULT_PARAMS as SOURCE_DEFAULTS } from '../shared/simParams';
 
 // Importing da frontend components
+// pullin up with the whole gang
 import {
   Header,
   Sidebar,
@@ -26,6 +28,7 @@ import {
 const DEFAULT_PARAMS: SimParams = SOURCE_DEFAULTS;
 
 // Mapping our drawing tools to the backend cell types. Big brain move.
+// dis is how we know if u drawin a wall or just chillin
 type DrawTool = 'wall' | 'entry' | 'exit' | 'erase';
 const DRAW_TOOL_TO_CELL: Record<DrawTool, CellType> = {
   wall: CellType.WALL,
@@ -40,6 +43,7 @@ export default function App() {
   const bgCanvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // The simulator engine ref. This bad boy runs the heavy math.
+  // absolute unit of a simulator
   const simulatorRef = useRef<CrowdSimulator | null>(null);
   const startTimeRef = useRef<number>(0);
   const editableCellsRef = useRef<Uint8Array | null>(null);
@@ -52,6 +56,7 @@ export default function App() {
   const [simState, setSimState] = useState<SimulatorState | null>(null);
   
   // Feature toggles
+  // lowkey turn dis on to stop the stampede
   const [preventionEnabled, setPreventionEnabled] = useState(false);
   const [viewMode, setViewMode] = useState<'density' | 'risk'>('density');
   const [drawTool, setDrawTool] = useState<DrawTool>('wall');
@@ -60,6 +65,7 @@ export default function App() {
   const [fps, setFps] = useState(60);
   
   // Flow parameters that the user can mess with
+  // tweak dese for max chaos
   const [entryRate, setEntryRate] = useState(DEFAULT_PARAMS.entryRate);
   const [pressureFactor, setPressureFactor] = useState(DEFAULT_PARAMS.pushFactor);
   const [exitDrain, setExitDrain] = useState(DEFAULT_PARAMS.exitDrain);
@@ -132,6 +138,7 @@ export default function App() {
     }
 
     // Adding a faint grid overlay because we love precision
+    // lookin sharp fr
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.lineWidth = 1;
     const gridStep = 10;
@@ -185,6 +192,7 @@ export default function App() {
   }, []);
 
   // Loads a predefined scenario (like Stadium or Bottleneck).
+  // pick ur poison
   const loadScenario = useCallback((nextScenario: 'bottleneck' | 'stadium') => {
     if (status === 'running' || status === 'initializing') return;
     const scen = nextScenario === 'bottleneck'
@@ -201,6 +209,7 @@ export default function App() {
   }, [prepareBackground, renderCellsPreview, rows, cols, status]);
 
   // The paint function for our interactive canvas. Lets the user draw walls like Bob Ross.
+  // drawin some happy little walls
   const paintCell = useCallback((event: PointerEvent<HTMLCanvasElement>) => {
     // If the sim is running, we block edits. No changing the rules mid-game.
     if (status === 'running' || status === 'initializing') return;
@@ -262,6 +271,7 @@ export default function App() {
 
   // This callback gets hammered by the simulator 60 times a second.
   // It grabs the fluid physics state and paints it to the canvas.
+  // absolute mayhem on the canvas
   const handleSimUpdate = useCallback((state: SimulatorState) => {
     const canvas = liveCanvasRef.current;
     if (!canvas || !bgCanvasRef.current || !simulatorRef.current) return;
@@ -310,6 +320,7 @@ export default function App() {
     }
 
     // Draw aggressive red squares where hazards are popping off
+    // ops spotted fr
     for (const alert of alerts) {
       ctx.strokeStyle = '#ef4444'; // hazard-crit
       ctx.lineWidth = 2;
@@ -327,6 +338,7 @@ export default function App() {
   }, []);
 
   // Kicks off the simulation loop
+  // let's get it started in here
   const handleStart = useCallback(() => {
     if (status === 'running') return;
     setStatus('initializing');
@@ -354,6 +366,7 @@ export default function App() {
   }, [rows, cols, entryRate, exitDrain, pressureFactor, fps, editableCells, preventionEnabled, handleSimUpdate, prepareBackground, status, elapsed]);
 
   // Stops the loop
+  // pause the vibe
   const handleStop = useCallback(() => {
     simulatorRef.current?.stop();
     setStatus('stopped');
@@ -396,6 +409,7 @@ export default function App() {
   }, [rows, status]);
 
   // Keyboard shortcuts because clicking buttons is for boomers
+  // real ones use the keys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only listen to shortcuts if we're actually on the canvas page
@@ -478,6 +492,7 @@ export default function App() {
   }, [activeSection]);
 
   // Bet, let's render this UI
+  // lookin good no cap
   return (
     <div ref={appRef} className="min-h-screen bg-void-950 text-gray-200 overflow-x-hidden">
       <Header

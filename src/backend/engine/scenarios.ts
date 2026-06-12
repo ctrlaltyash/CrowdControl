@@ -1,10 +1,14 @@
 /* ─────────────────────────────────────────────────────────────
    Scenario Builder
    Constructs meaningful grid layouts with entries, exits, walls
+
+   dis file builds the playground, no cap.
+   lowkey settin up where ppl r gonna get squished. fr.
    ───────────────────────────────────────────────────────────── */
 
 import { CellType } from './types';
 
+// scenario result interface, bet
 export interface ScenarioResult {
   cells: Uint8Array;
   rows: number;
@@ -14,14 +18,16 @@ export interface ScenarioResult {
 }
 
 /** Bottleneck / hallway scenario: crowd flows from left entry through narrow corridor */
+// dis one is the classic bottleneck, fr fr
 export function buildBottleneckScenario(rows = 100, cols = 100): ScenarioResult {
   const cells = new Uint8Array(rows * cols);
+  // helper to set cell type, no cap
   const set = (r: number, c: number, t: CellType) => {
     if (r >= 0 && r < rows && c >= 0 && c < cols)
       cells[r * cols + c] = t;
   };
 
-  // Outer walls (border)
+  // Outer walls (border), stay inside or u r cooked
   for (let c = 0; c < cols; c++) {
     set(0, c, CellType.WALL);
     set(rows - 1, c, CellType.WALL);
@@ -31,32 +37,32 @@ export function buildBottleneckScenario(rows = 100, cols = 100): ScenarioResult 
     set(r, cols - 1, CellType.WALL);
   }
 
-  // Central dividing wall with narrow bottleneck
+  // Central dividing wall with narrow bottleneck, major sus factor
   const midC = Math.floor(cols / 2);
   const gapStart = Math.floor(rows * 0.42);
   const gapEnd   = Math.floor(rows * 0.58);
 
   for (let r = 1; r < rows - 1; r++) {
-    if (r >= gapStart && r <= gapEnd) continue; // gap = bottleneck opening
+    if (r >= gapStart && r <= gapEnd) continue; // gap = bottleneck opening, the only way out fr
     set(r, midC, CellType.WALL);
     set(r, midC - 1, CellType.WALL);
     set(r, midC + 1, CellType.WALL);
   }
 
-  // Entry region: left side columns 2–4, middle rows
+  // Entry region: left side columns 2–4, middle rows, where the squad enters
   for (let r = 5; r <= rows - 6; r++) {
     for (let c = 2; c <= 4; c++) {
       set(r, c, CellType.ENTRY);
     }
   }
 
-  // Exit region: right side, middle
+  // Exit region: right side, middle, peace out here
   for (let r = Math.floor(rows * 0.3); r <= Math.floor(rows * 0.7); r++) {
     set(r, cols - 2, CellType.EXIT);
     set(r, cols - 3, CellType.EXIT);
   }
 
-  // Obstacle pillars on right side
+  // Obstacle pillars on right side, just to be mid
   const pillarR = Math.floor(rows / 2);
   const pillarC = Math.floor(cols * 0.75);
   for (let dr = -3; dr <= 3; dr++) {
@@ -73,6 +79,7 @@ export function buildBottleneckScenario(rows = 100, cols = 100): ScenarioResult 
 }
 
 /** Stadium exit scenario: crowd converging on multiple exits */
+// stadium rush, everyone tryin to leave at once, no cap
 export function buildStadiumScenario(rows = 100, cols = 100): ScenarioResult {
   const cells = new Uint8Array(rows * cols);
   const set = (r: number, c: number, t: CellType) => {
@@ -80,7 +87,7 @@ export function buildStadiumScenario(rows = 100, cols = 100): ScenarioResult {
       cells[r * cols + c] = t;
   };
 
-  // Border
+  // Border, don't clip through the walls
   for (let c = 0; c < cols; c++) { set(0, c, CellType.WALL); set(rows - 1, c, CellType.WALL); }
   for (let r = 0; r < rows; r++) { set(r, 0, CellType.WALL); set(r, cols - 1, CellType.WALL); }
 
@@ -103,7 +110,7 @@ export function buildStadiumScenario(rows = 100, cols = 100): ScenarioResult {
     }
   }
 
-  // Entries: multiple around edges
+  // Entries: multiple around edges, ppl spawning everywhere, bet
   const entryPositions = [
     [Math.floor(rows * 0.15), 2],
     [Math.floor(rows * 0.5),  2],
@@ -119,7 +126,7 @@ export function buildStadiumScenario(rows = 100, cols = 100): ScenarioResult {
     }
   }
 
-  // One narrow central exit
+  // One narrow central exit, major L if u r in the back
   const exitC = Math.floor(cols / 2);
   for (let r = Math.floor(rows * 0.45); r <= Math.floor(rows * 0.55); r++) {
     set(r, exitC, CellType.EXIT);

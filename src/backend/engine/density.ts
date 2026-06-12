@@ -1,21 +1,16 @@
 /* ─────────────────────────────────────────────────────────────
    Density Evolution V6 — Nonlinear Degenerate Advection-Diffusion
    Implements the paper's crowd instability model directly.
-   
-   dis is the big brain math file, no cap.
-   lowkey simulation how ppl move and squash each other. fr.
    ───────────────────────────────────────────────────────────── */
 
 import { CellType, SimParams } from './types';
 
-// diagnostics for when the math goes sus
 export interface DensityStepDiagnostics {
   overshootCount: number;
   totalOvershootMagnitude: number;
   maxOvershootMagnitude: number;
 }
 
-// cache for buffers so we don't lag the whole vibe
 const SCRATCH_BUFFERS = new WeakMap<Float64Array, {
   pressure: Float64Array;
   velocityX: Float64Array;
@@ -24,7 +19,6 @@ const SCRATCH_BUFFERS = new WeakMap<Float64Array, {
   scratch2: Float64Array;
 }>();
 
-// main function to step the density, rizzing up the grid
 export function stepDensityV3(
   curr: Float64Array,
   next: Float64Array,
@@ -56,7 +50,6 @@ export function stepDensityV3(
   const D = typeof diffusivity === 'number' && diffusivity >= 0 ? diffusivity : spreadFactor;
   const push = typeof pushFactor === 'number' ? Math.max(0, pushFactor) : 1;
 
-  // gettin or makin buffers, bet
   let buffers = SCRATCH_BUFFERS.get(curr);
   if (!buffers || buffers.pressure.length !== N) {
     buffers = {
@@ -71,11 +64,9 @@ export function stepDensityV3(
 
   const { pressure, velocityX, velocityY, scratch1, scratch2 } = buffers;
 
-  // helpers to see if we r hitting a wall or out of bounds, sus
   const isBlocked = (index: number) => cells[index] === CellType.WALL || cells[index] === CellType.MITIGATION;
   const inBounds = (r: number, c: number) => r >= 0 && r < rows && c >= 0 && c < cols;
 
-  // compute pressure and velocity, no cap
   const computePressureAndVelocity = (source: Float64Array) => {
     for (let i = 0; i < N; i++) {
       if (isBlocked(i)) {
@@ -86,19 +77,16 @@ export function stepDensityV3(
       }
 
       const density = Math.max(0, source[i]);
-      // mobility is how much u can move, lowkey important
       const mobility = Math.max(0, Math.pow(Math.max(0, 1 - density / rhoMax), beta));
       velocityX[i] = baseVx[i] * mobility * push;
       velocityY[i] = baseVy[i] * mobility * push;
 
-      // activate pressure bc it's getting tight in here
       const activation = pressureA === 0 ? 0.5 : 1 / (1 + Math.exp(-pressureA * (density - rhoCrit)));
       const scaledDensity = rhoCrit > 0 ? density / rhoCrit : 0;
       pressure[i] = pressureK * Math.pow(scaledDensity, pressureN) * activation;
     }
   };
 
-  // perform one step of the simulation, the goat function
   const performStep = (source: Float64Array, dest: Float64Array, localDt: number) => {
     computePressureAndVelocity(source);
     dest.fill(0);
@@ -114,7 +102,6 @@ export function stepDensityV3(
       const r = Math.floor(i / cols);
       const c = i % cols;
 
-      // fluxes for advection, fr fr
       let FxEast = 0, FxWest = 0, FySouth = 0, FyNorth = 0;
 
       if (c < cols - 1) {
@@ -148,7 +135,6 @@ export function stepDensityV3(
 
       const advection = -(FxEast - FxWest + FySouth - FyNorth);
 
-      // diffusion so ppl spread out, bet
       let neighborSum = 0, neighborCount = 0;
       const neighbors = [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]];
       for (const [nr, nc] of neighbors) {
@@ -162,7 +148,6 @@ export function stepDensityV3(
       }
       const diffusion = D * (neighborSum - neighborCount * density);
 
-      // compression bc ppl r squishin, lowkey scary
       let PxEast = 0, PxWest = 0, PySouth = 0, PyNorth = 0;
       if (c < cols - 1) {
         const right = i + 1;
@@ -196,12 +181,10 @@ export function stepDensityV3(
       const compression = -(PxEast - PxWest + PySouth - PyNorth);
       let updated = density + localDt * (advection + diffusion + compression);
 
-      // if u at the exit, u out, peace
       if (cell === CellType.EXIT) {
         updated = Math.max(0, updated - exitDrain * updated * localDt);
       }
 
-      // don't go over rhoMax, dat's the rule
       const clamped = Math.max(0, Math.min(updated, rhoMax));
       if (diagnostics && updated > rhoMax) {
         const overshoot = updated - rhoMax;
@@ -219,7 +202,6 @@ export function stepDensityV3(
     return;
   }
 
-  // substeps so the math doesn't explode, fr fr
   const stableDt = Math.min(effectiveDt, 0.01);
   const substeps = Math.max(1, Math.ceil(effectiveDt / stableDt));
   const stepDt = effectiveDt / substeps;
@@ -232,7 +214,6 @@ export function stepDensityV3(
     if (!isLast) source = target;
   }
 
-  // ppl entering the scene, more ppl = more chaos, bet
   let entryCount = 0;
   for (let i = 0; i < N; i++) if (cells[i] === CellType.ENTRY) entryCount++;
   const perEntryFlow = entryCount > 0 ? (entryRate * dt) / entryCount : 0;
@@ -245,7 +226,6 @@ export function stepDensityV3(
   }
 }
 
-// compute risk so we know if we r cooked
 export function computeRiskV3(
   rho: Float64Array,
   vx: Float64Array,
@@ -286,13 +266,11 @@ export function computeRiskV3(
     const speed = Math.hypot(vx[i], vy[i]);
     const d = distanceToExit[i];
 
-    // different types of risk, no cap
     const densityRisk = Math.min(1, r / rhoMax);
     const congestionRisk = r >= rhoCrit ? Math.min(1, (r - rhoCrit) / Math.max(1, rhoMax - rhoCrit)) : 0;
     const distanceRisk = d >= 1e8 ? 1 : Math.min(1, Math.max(0, d / maxDistance));
     const speedRisk = 1 - Math.min(1, speed / maxSpeed);
 
-    // final raw risk calculation, fr fr
     const rawRisk = (
       riskAlpha * densityRisk +
       riskDelta * distanceRisk +
