@@ -1,7 +1,7 @@
 // The Sidebar. This is where all the knobs and dials live. Big control panel energy.
 // Lowkey the brain of the operation. Don't touch if u don't know the vibes.
-import { useEffect, useRef } from 'react';
-import { Settings2, Grid, Activity, Droplet, ShieldAlert } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Settings2, Grid, Activity, Droplet, ShieldAlert, ChevronDown } from 'lucide-react';
 import gsap from 'gsap';
 import type { SimStatus } from '../../backend/engine/types';
 
@@ -23,6 +23,27 @@ interface SidebarProps {
   onPressureFactorChange: (value: number) => void;
   exitDrain: number;
   onExitDrainChange: (value: number) => void;
+
+  // Yashvardhan 2026 Model
+  rhoMax: number;
+  onRhoMaxChange: (value: number) => void;
+  rhoCrit: number;
+  onRhoCritChange: (value: number) => void;
+  beta: number;
+  onBetaChange: (value: number) => void;
+  pressureK: number;
+  onPressureKChange: (value: number) => void;
+  pressureN: number;
+  onPressureNChange: (value: number) => void;
+  diffusivity: number;
+  onDiffusivityChange: (value: number) => void;
+  camaraderieG: number;
+  onCamaraderieGChange: (value: number) => void;
+  camaraderieI: number;
+  onCamaraderieIChange: (value: number) => void;
+  camaraderieM: number;
+  onCamaraderieMChange: (value: number) => void;
+
   preventionEnabled: boolean;
   onPreventionChange: (value: boolean) => void;
   viewMode: 'density' | 'risk';
@@ -51,7 +72,33 @@ const DRAW_TOOLS: Array<[DrawTool, string]> = [
   ['erase', 'Eraser'],
 ];
 
-// The Sidebar component itself. It's giving "I'm in charge here".
+interface SectionHeaderProps {
+  id: string;
+  icon: React.ElementType;
+  title: string;
+  colorClass?: string;
+  isExpanded: boolean;
+  onToggle: (id: string) => void;
+}
+
+const SectionHeader = ({ id, icon: Icon, title, colorClass = "text-neon-cyan", isExpanded, onToggle }: SectionHeaderProps) => (
+  <button
+    onClick={() => onToggle(id)}
+    className="flex items-center justify-between w-full mb-4 text-white font-display font-bold group"
+  >
+    <div className="flex items-center gap-3">
+      <div className={`p-2 rounded-lg bg-void-950 border border-white/5 group-hover:border-white/10 transition-colors ${colorClass}`}>
+        <Icon size={16} />
+      </div>
+      <h3 className="text-sm tracking-tight">{title}</h3>
+    </div>
+    <ChevronDown 
+      size={14} 
+      className={`text-gray-600 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+    />
+  </button>
+);
+
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   gridSize,
@@ -64,6 +111,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onPressureFactorChange,
   exitDrain,
   onExitDrainChange,
+
+  rhoMax,
+  onRhoMaxChange,
+  rhoCrit,
+  onRhoCritChange,
+  beta,
+  onBetaChange,
+  pressureK,
+  onPressureKChange,
+  pressureN,
+  onPressureNChange,
+  diffusivity,
+  onDiffusivityChange,
+  camaraderieG,
+  onCamaraderieGChange,
+  camaraderieI,
+  onCamaraderieIChange,
+  camaraderieM,
+  onCamaraderieMChange,
+
   preventionEnabled,
   onPreventionChange,
   viewMode,
@@ -78,6 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isRunning,
 }) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>('engine');
 
   // Sliding in from the left on load. Buttery smooth, fr.
   useEffect(() => {
@@ -90,40 +158,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
       );
     }, sidebarRef);
 
-    // Clean up or it's sus.
     return () => ctx.revert();
   }, []);
 
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
   return (
-    // The main container for the sidebar. It's fixed and lookin' sharp.
     <aside
       data-sidebar
       ref={sidebarRef}
-      className={`fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto bg-void-900 border-r border-white/5 transition-transform duration-300 pt-20 pb-10 custom-scrollbar ${
+      className={`fixed inset-y-0 left-0 z-40 w-80 overflow-y-auto bg-void-950/80 backdrop-blur-3xl border-r border-white/5 transition-transform duration-500 pt-24 pb-12 custom-scrollbar ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}
     >
-      <div className="p-5 space-y-6">
-        
-        {/* Core Settings Block. The main course. */}
-        <div className="glass-card p-5" data-sidebar-card>
-          <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
-            <Settings2 size={18} className="text-neon-cyan" />
-            <h3>Engine Params</h3>
-          </div>
-          
-          <div className="space-y-5">
-            {/* Grid Size Slider. How much detail do u want? */}
+      <div className="p-6 space-y-8">
+
+        {/* Core Settings Block */}
+        <div className="glass-card p-6" data-sidebar-card>
+          <SectionHeader 
+            id="engine" 
+            icon={Settings2} 
+            title="Engine Dynamics" 
+            isExpanded={expandedSection === 'engine'} 
+            onToggle={toggleSection} 
+          />
+
+          <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expandedSection === 'engine' ? 'max-h-[500px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
             <div>
-              <div className="flex justify-between mb-1">
-                <label className="slider-label">Resolution</label>
-                <span className="text-xs text-neon-cyan font-mono font-bold">{gridSize}²</span>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Resolution</label>
+                <span className="text-[10px] text-neon-cyan font-mono font-black">{gridSize}²</span>
               </div>
               <input
-                type="range"
-                min="50"
-                max="150"
-                step="10"
+                type="range" min="50" max="150" step="10"
                 value={gridSize}
                 onChange={(e) => onGridSizeChange(Number(e.target.value))}
                 className="slider-input"
@@ -131,125 +200,171 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
 
-            {/* FPS Slider. Keep it smooth or keep it laggy. */}
             <div>
-              <div className="flex justify-between mb-1">
-                <label className="slider-label">Tick Rate</label>
-                <span className="text-xs text-white font-mono font-bold">{fps} fps</span>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Tick Rate</label>
+                <span className="text-[10px] text-white font-mono font-black">{fps} FPS</span>
               </div>
               <input
-                type="range"
-                min="30"
-                max="120"
-                step="5"
+                type="range" min="30" max="120" step="5"
                 value={fps}
                 onChange={(e) => onFpsChange(Number(e.target.value))}
                 className="slider-input"
                 disabled={isRunning}
               />
             </div>
-          </div>
-        </div>
 
-        {/* View Mode Toggle. Change your perspective. */}
-        <div className="glass-card p-5" data-sidebar-card>
-          <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
-            <Activity size={18} className="text-neon-pink" />
-            <h3>Lens Filter</h3>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2 bg-void-950 p-1.5 rounded-xl border border-white/5">
-            <button
-              type="button"
-              onClick={() => onViewModeChange('density')}
-              className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'density' ? 'bg-neon-cyan text-white shadow-glow-cyan' : 'text-gray-500 hover:text-white'
-              }`}
-            >
-              Density
-            </button>
-            <button
-              type="button"
-              onClick={() => onViewModeChange('risk')}
-              className={`py-2 rounded-lg text-xs font-bold transition-all ${
-                viewMode === 'risk' ? 'bg-neon-pink text-white shadow-glow-pink' : 'text-gray-500 hover:text-white'
-              }`}
-            >
-              Risk Heat
-            </button>
-          </div>
-        </div>
-
-        {/* Physics Variables. Messin' with the laws of nature. */}
-        <div className="glass-card p-5" data-sidebar-card>
-          <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
-            <Droplet size={18} className="text-neon-green" />
-            <h3>Fluid Dynamics</h3>
-          </div>
-
-          <div className="space-y-5">
-            {/* Spawn Rate Slider. How many ppl u want? */}
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="slider-label">Spawn Rate</label>
-                <span className="text-xs text-neon-green font-mono font-bold">{entryRate}</span>
+            <div className="pt-4 border-t border-white/5">
+              <label className="slider-label uppercase mb-3">Lens Filter</label>
+              <div className="grid grid-cols-2 gap-2 bg-void-950/50 p-1 rounded-xl border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('density')}
+                  className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'density' ? 'bg-neon-cyan text-void-950 shadow-glow-cyan' : 'text-gray-500 hover:text-white'
+                  }`}
+                >
+                  Density
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('risk')}
+                  className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'risk' ? 'bg-neon-pink text-white shadow-glow-pink' : 'text-gray-500 hover:text-white'
+                  }`}
+                >
+                  Risk
+                </button>
               </div>
-              <input
-                type="range"
-                min="10"
-                max="140"
-                step="2"
-                value={entryRate}
-                onChange={(e) => onEntryRateChange(Number(e.target.value))}
-                className="slider-input"
-                disabled={isRunning}
-              />
-            </div>
-
-            {/* Panic Pressure Slider. It's getting hot in here. */}
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="slider-label">Panic Pressure</label>
-                <span className="text-xs text-neon-pink font-mono font-bold">{pressureFactor.toFixed(1)}x</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="6"
-                step="0.1"
-                value={pressureFactor}
-                onChange={(e) => onPressureFactorChange(Number(e.target.value))}
-                className="slider-input"
-                disabled={isRunning}
-              />
-            </div>
-            
-            {/* Drain Efficiency Slider. How fast they leave. */}
-            <div>
-              <div className="flex justify-between mb-1">
-                <label className="slider-label">Drain Efficiency</label>
-                <span className="text-xs text-white font-mono font-bold">{exitDrain.toFixed(2)}</span>
-              </div>
-              <input
-                type="range"
-                min="0.1"
-                max="0.8"
-                step="0.05"
-                value={exitDrain}
-                onChange={(e) => onExitDrainChange(Number(e.target.value))}
-                className="slider-input"
-                disabled={isRunning}
-              />
             </div>
           </div>
         </div>
 
-        {/* AI Defense. Let the machines handle it. */}
-        <div className="glass-card p-5" data-sidebar-card>
+        {/* Yashvardhan 2026 Model Section */}
+        <div className="glass-card p-6" data-sidebar-card>
+          <SectionHeader 
+            id="model" 
+            icon={Activity} 
+            title="Nonlinear Model" 
+            colorClass="text-neon-purple" 
+            isExpanded={expandedSection === 'model'} 
+            onToggle={toggleSection} 
+          />
+
+          <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expandedSection === 'model' ? 'max-h-[800px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            {[
+              { label: 'Max Density (ρₘₐₓ)', val: rhoMax, min: 4, max: 12, step: 0.5, fn: onRhoMaxChange },
+              { label: 'Crit Density (ρ꜀ᵣᵢₜ)', val: rhoCrit, min: 1, max: 6, step: 0.2, fn: onRhoCritChange },
+              { label: 'Mobility (β)', val: beta, min: 1, max: 4, step: 0.1, fn: onBetaChange },
+              { label: 'Pressure (k)', val: pressureK, min: 0, max: 5, step: 0.1, fn: onPressureKChange },
+              { label: 'Pressure (n)', val: pressureN, min: 2, max: 6, step: 0.1, fn: onPressureNChange },
+              { label: 'Diffusion (D)', val: diffusivity.toFixed(3), min: 0, max: 0.1, step: 0.005, fn: (v: number) => onDiffusivityChange(v) },
+            ].map((p, i) => (
+              <div key={i}>
+                <div className="flex justify-between mb-2">
+                  <label className="slider-label uppercase">{p.label}</label>
+                  <span className="text-[10px] text-neon-purple font-mono font-black">{p.val}</span>
+                </div>
+                <input
+                  type="range" min={p.min} max={p.max} step={p.step}
+                  value={Number(p.val)} onChange={(e) => p.fn(Number(e.target.value))}
+                  className="slider-input" disabled={isRunning}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Camaraderie & Risk Section */}
+        <div className="glass-card p-6" data-sidebar-card>
+          <SectionHeader 
+            id="social" 
+            icon={ShieldAlert} 
+            title="Social Dynamics" 
+            colorClass="text-neon-pink" 
+            isExpanded={expandedSection === 'social'} 
+            onToggle={toggleSection} 
+          />
+
+          <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expandedSection === 'social' ? 'max-h-[500px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            {[
+              { label: 'Coordination (G)', val: camaraderieG, min: 0, max: 1, step: 0.05, fn: onCamaraderieGChange },
+              { label: 'Independence (I)', val: camaraderieI, min: 0, max: 1, step: 0.05, fn: onCamaraderieIChange },
+              { label: 'Crowd Exp (m)', val: camaraderieM, min: 1, max: 3, step: 0.1, fn: onCamaraderieMChange },
+            ].map((p, i) => (
+              <div key={i}>
+                <div className="flex justify-between mb-2">
+                  <label className="slider-label uppercase">{p.label}</label>
+                  <span className="text-[10px] text-neon-pink font-mono font-black">{p.val}</span>
+                </div>
+                <input
+                  type="range" min={p.min} max={p.max} step={p.step}
+                  value={p.val} onChange={(e) => p.fn(Number(e.target.value))}
+                  className="slider-input" disabled={isRunning}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Fluid Dynamics */}
+        <div className="glass-card p-6" data-sidebar-card>
+          <SectionHeader 
+            id="fluid" 
+            icon={Droplet} 
+            title="Fluid Physics" 
+            colorClass="text-neon-green" 
+            isExpanded={expandedSection === 'fluid'} 
+            onToggle={toggleSection} 
+          />
+
+          <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expandedSection === 'fluid' ? 'max-h-[500px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Spawn Rate</label>
+                <span className="text-[10px] text-neon-green font-mono font-black">{entryRate}</span>
+              </div>
+              <input
+                type="range" min="10" max="140" step="2"
+                value={entryRate} onChange={(e) => onEntryRateChange(Number(e.target.value))}
+                className="slider-input" disabled={isRunning}
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Panic Factor</label>
+                <span className="text-[10px] text-neon-pink font-mono font-black">{pressureFactor.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range" min="1" max="6" step="0.1"
+                value={pressureFactor} onChange={(e) => onPressureFactorChange(Number(e.target.value))}
+                className="slider-input" disabled={isRunning}
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Efficiency</label>
+                <span className="text-[10px] text-white font-mono font-black">{exitDrain.toFixed(2)}</span>
+              </div>
+              <input
+                type="range" min="0.1" max="0.8" step="0.05"
+                value={exitDrain} onChange={(e) => onExitDrainChange(Number(e.target.value))}
+                className="slider-input" disabled={isRunning}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* AI Defense */}
+        <div className="glass-card p-6" data-sidebar-card>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white font-display font-bold">
-              <ShieldAlert size={18} className="text-neon-purple" />
-              <h3>AI Defense</h3>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-void-950 border border-white/5 text-neon-purple shadow-glow-pink">
+                <ShieldAlert size={16} />
+              </div>
+              <h3 className="text-sm font-bold text-white tracking-tight">AI Defense</h3>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input 
@@ -258,77 +373,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 checked={preventionEnabled}
                 onChange={(e) => onPreventionChange(e.target.checked)}
               />
-              <div className="w-11 h-6 bg-void-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-purple shadow-glow-pink"></div>
+              <div className="w-11 h-6 bg-void-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-purple shadow-glow-pink"></div>
             </label>
           </div>
         </div>
 
-        {/* Level Editor. Build your dream map. */}
-        <div className="glass-card p-5" data-sidebar-card>
-          <div className="flex items-center gap-2 mb-4 text-white font-display font-bold">
-            <Grid size={18} className="text-gray-400" />
-            <h3>Map Architech</h3>
-          </div>
+        {/* Map Architech */}
+        <div className="glass-card p-6" data-sidebar-card>
+          <SectionHeader 
+            id="editor" 
+            icon={Grid} 
+            title="Map Architect" 
+            colorClass="text-gray-400" 
+            isExpanded={expandedSection === 'editor'} 
+            onToggle={toggleSection} 
+          />
 
-          {/* Draw Tool Buttons. Choose your brush. */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            {DRAW_TOOLS.map(([tool, label]) => (
-              <button
-                key={tool}
-                onClick={() => onDrawToolChange(tool)}
-                className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                  drawTool === tool 
-                    ? 'bg-white text-void-950 shadow-glass' 
-                    : 'bg-void-800 text-gray-400 hover:bg-void-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          
-          {/* Brush Scale Slider. How big u want it? */}
-          <div className="mb-4">
-            <div className="flex justify-between mb-1">
-              <label className="slider-label">Brush Scale</label>
-              <span className="text-xs text-white font-mono font-bold">{brushSize}px</span>
+          <div className={`space-y-6 overflow-hidden transition-all duration-500 ${expandedSection === 'editor' ? 'max-h-[800px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+            <div className="grid grid-cols-2 gap-2">
+              {DRAW_TOOLS.map(([tool, label]) => (
+                <button
+                  key={tool}
+                  onClick={() => onDrawToolChange(tool)}
+                  className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    drawTool === tool 
+                      ? 'bg-white text-void-950 border-white shadow-glass' 
+                      : 'bg-void-900 text-gray-500 border-white/5 hover:border-white/10'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={brushSize}
-              onChange={(e) => onBrushSizeChange(Number(e.target.value))}
-              className="slider-input"
-              disabled={isRunning}
-            />
-          </div>
 
-          {/* Scenarios and nukin'. */}
-          <div className="space-y-2 pt-4 border-t border-white/5">
-            <p className="slider-label mb-2">Scenarios</p>
-            {['bottleneck', 'stadium'].map((option) => (
+            <div>
+              <div className="flex justify-between mb-2">
+                <label className="slider-label uppercase">Brush Scale</label>
+                <span className="text-[10px] text-white font-mono font-black">{brushSize}PX</span>
+              </div>
+              <input
+                type="range" min="1" max="10"
+                value={brushSize} onChange={(e) => onBrushSizeChange(Number(e.target.value))}
+                className="slider-input" disabled={isRunning}
+              />
+            </div>
+
+            <div className="space-y-3 pt-6 border-t border-white/5">
+              <label className="slider-label uppercase">Templates</label>
+              {['bottleneck', 'stadium'].map((option) => (
+                <button
+                  key={option}
+                  onClick={() => onScenarioChange(option as 'bottleneck' | 'stadium')}
+                  className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    scenario === option 
+                      ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30 shadow-glow-cyan' 
+                      : 'bg-void-900 text-gray-500 border-white/5 hover:border-white/10'
+                  }`}
+                >
+                  {option} Matrix
+                </button>
+              ))}
+
               <button
-                key={option}
-                onClick={() => onScenarioChange(option as 'bottleneck' | 'stadium')}
-                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${
-                  scenario === option 
-                    ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30' 
-                    : 'bg-void-800 text-gray-400 hover:bg-void-700 border border-transparent'
-                }`}
+                onClick={onClearLayout}
+                className="w-full py-4 mt-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-hazard-crit/5 text-hazard-crit border border-hazard-crit/20 hover:bg-hazard-crit/10 transition-all"
+                disabled={isRunning}
               >
-                {option} Matrix
+                Reset Canvas
               </button>
-            ))}
-            
-            {/* Clear the whole thing. Big rip. */}
-            <button
-              onClick={onClearLayout}
-              className="w-full py-2.5 mt-2 rounded-xl text-sm font-bold bg-hazard-crit/10 text-hazard-crit border border-hazard-crit/30 hover:bg-hazard-crit/20 transition-all"
-              disabled={isRunning}
-            >
-              Nuke Layout
-            </button>
+            </div>
           </div>
         </div>
 

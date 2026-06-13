@@ -1,9 +1,8 @@
 // Floating media controls bc scrolling to da sidebar is mid. 
 // Highkey useful for debugging, no cap.
-import { Play, Pause, RotateCcw, FastForward, SkipForward } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
 import { setupButtonRipple, setupMagneticHover } from '../utils/gsapAnimations';
 import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
 
 // props for da dock, keeping it 100
 interface FloatingPlaybackDockProps {
@@ -26,21 +25,6 @@ export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
   const dockRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // smooth slide up when da canvas mounts, real smooth energy
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (dockRef.current) {
-        gsap.fromTo(
-          dockRef.current,
-          { y: 100, opacity: 0 },
-          { y: -20, opacity: 1, duration: 1, ease: 'power4.out', delay: 0.5 }
-        );
-      }
-    }, dockRef);
-
-    return () => ctx.revert();
-  }, []);
-
   // magnetic hover effects so da buttons follow yo mouse slightly. magnetic rizz fr.
   useEffect(() => {
     const cleanups: Array<() => void> = [];
@@ -55,63 +39,64 @@ export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
   return (
     <div
       ref={dockRef}
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 p-2 rounded-3xl bg-void-900/80 backdrop-blur-2xl border border-white/10 shadow-glass"
+      className="mt-6 flex items-center justify-between gap-4 p-3 rounded-[2rem] bg-white/[0.02] border border-white/5 shadow-inner backdrop-blur-md"
     >
-      {/* status indicator, let 'em know if we live */}
-      <div className="flex items-center gap-1.5 px-3 border-r border-white/10 mr-1">
-        <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-neon-green animate-pulse shadow-glow-green' : 'bg-gray-600'}`} />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 select-none w-16 text-center">
-          {status}
-        </span>
+      <div className="flex items-center gap-3">
+        <button
+          ref={(el) => { buttonRefs.current[0] = el; }}
+          onClick={onReset}
+          className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] text-gray-400 hover:text-white transition-all active:scale-95"
+          title="Reset Simulation (R)"
+        >
+          <RotateCcw size={22} />
+        </button>
+
+        <button
+          ref={(el) => { buttonRefs.current[2] = el; }}
+          onClick={onStep}
+          className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] text-gray-400 hover:text-white transition-all active:scale-95"
+          title="Step Forward"
+        >
+          <SkipForward size={22} />
+        </button>
       </div>
 
-      <button
-        ref={(el) => { buttonRefs.current[0] = el; }}
-        onClick={onReset}
-        className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
-        title="Reset Simulation (R)"
-      >
-        <RotateCcw size={20} />
-      </button>
-
       {/* da big play/pause button. swaps colors based on state, real flashy */}
-      {isRunning ? (
-        <button
-          ref={(el) => { buttonRefs.current[1] = el; }}
-          onClick={onPause}
-          className="p-4 rounded-2xl bg-neon-pink text-white shadow-glow-pink hover:scale-105 active:scale-95 transition-all"
-          title="Pause (Space)"
-        >
-          <Pause size={24} fill="currentColor" />
-        </button>
-      ) : (
-        <button
-          ref={(el) => { buttonRefs.current[1] = el; }}
-          onClick={onPlay}
-          className="p-4 rounded-2xl bg-neon-cyan text-void-950 shadow-glow-cyan hover:scale-105 active:scale-95 transition-all"
-          title="Play (Space)"
-        >
-          <Play size={24} fill="currentColor" />
-        </button>
-      )}
+      <div className="flex-1 flex justify-center">
+        {isRunning ? (
+          <button
+            ref={(el) => { buttonRefs.current[1] = el; }}
+            onClick={onPause}
+            className="group relative px-10 py-4 rounded-2xl bg-neon-pink text-white shadow-glow-pink hover:bg-fuchsia-400 active:scale-95 transition-all overflow-hidden"
+            title="Pause (Space)"
+          >
+            <div className="relative z-10 flex items-center gap-3">
+              <Pause size={24} fill="currentColor" />
+              <span className="text-sm font-black uppercase tracking-widest">Halt Engine</span>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        ) : (
+          <button
+            ref={(el) => { buttonRefs.current[1] = el; }}
+            onClick={onPlay}
+            className="group relative px-10 py-4 rounded-2xl bg-neon-cyan text-void-950 shadow-glow-cyan hover:bg-cyan-400 active:scale-95 transition-all overflow-hidden"
+            title="Play (Space)"
+          >
+            <div className="relative z-10 flex items-center gap-3">
+              <Play size={24} fill="currentColor" />
+              <span className="text-sm font-black uppercase tracking-widest">Initiate Sim</span>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </button>
+        )}
+      </div>
 
-      <button
-        ref={(el) => { buttonRefs.current[2] = el; }}
-        onClick={onStep}
-        className="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
-        title="Step Forward"
-      >
-        <SkipForward size={20} />
-      </button>
-
-      {/* speed control placeholder. currently just aesthetic flex fr. */}
-      <div className="flex items-center gap-1 px-3 border-l border-white/10 ml-1">
-        <button
-          className="p-2 rounded-xl hover:bg-white/5 text-gray-500 hover:text-white transition-all"
-          title="Playback Speed"
-        >
-          <FastForward size={18} />
-        </button>
+      <div className="flex items-center gap-4 px-6 py-3 bg-void-950/50 rounded-2xl border border-white/5 min-w-[140px] justify-center">
+        <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-neon-green animate-pulse shadow-[0_0_12px_rgba(132,204,22,0.6)]' : 'bg-gray-600'}`} />
+        <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 select-none">
+          {status}
+        </span>
       </div>
     </div>
   );

@@ -34,66 +34,66 @@ export const FormulaShowcase: React.FC = () => {
     <section ref={containerRef} className="w-full">
       <div className="max-w-7xl mx-auto">
         
-        <div className="mb-12 text-center">
-          <h2 className="text-4xl font-display font-black mb-4 text-white drop-shadow-lg">
-            The <span className="text-neon-cyan">Math</span> Engine
+        <div className="mb-16 text-center">
+          <h2 className="text-5xl font-display font-black mb-6 text-white tracking-tight">
+            The <span className="text-neon-cyan">Core</span> Calculus
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            We didn't just guess these crowd physics. This is the raw Laplace and risk calculus running under the hood. Respect the math.
+          <p className="text-gray-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed">
+            Predictive analytics powered by high-fidelity fluid dynamics and nonlinear transport models.
           </p>
         </div>
 
         {/* CSS Grid is clutch for responsive layouts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {FORMULAS.map((formula, index) => (
             <div
               key={formula.id}
               ref={(el) => { cardsRef.current[index] = el; }}
-              className="glass-card p-6 h-full flex flex-col group opacity-0 translate-y-6 hover:-translate-y-2 transition-transform duration-300"
+              className="glass-card p-10 h-full flex flex-col group opacity-0 translate-y-6 hover:-translate-y-2 transition-all duration-500"
             >
               {/* Top badge to show what category of math we're flexing */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <span
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${
+                  className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.25em] border ${
                     formula.category === 'fluid-dynamics'
-                      ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30'
+                      ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/20'
                       : formula.category === 'risk-assessment'
-                      ? 'bg-hazard-crit/10 text-hazard-crit border-hazard-crit/30'
+                      ? 'bg-hazard-crit/10 text-hazard-crit border-hazard-crit/20'
                       : formula.category === 'mitigation'
-                      ? 'bg-neon-pink/10 text-neon-pink border-neon-pink/30'
-                      : 'bg-neon-green/10 text-neon-green border-neon-green/30'
+                      ? 'bg-neon-pink/10 text-neon-pink border-neon-pink/20'
+                      : 'bg-neon-green/10 text-neon-green border-neon-green/20'
                   }`}
                 >
                   {formula.category.replace('-', ' ')}
                 </span>
               </div>
 
-              <h3 className="text-xl font-display font-bold text-white mb-4 group-hover:text-neon-cyan transition-colors">
+              <h3 className="text-2xl font-display font-black text-white mb-6 group-hover:text-neon-cyan transition-colors tracking-tight">
                 {formula.title}
               </h3>
 
               {/* The actual math flex. KaTeX renders it beautifully. */}
-              <div className="bg-void-950 rounded-xl p-6 mb-6 overflow-x-auto border border-white/5 shadow-inner flex-grow flex items-center justify-center">
-                <div className="text-white text-lg">
+              <div className="bg-[#02020a] rounded-[2rem] p-8 mb-8 overflow-x-auto border border-white/5 shadow-inner flex-grow flex items-center justify-center min-h-[140px]">
+                <div className="text-white text-xl">
                   <BlockMath>{formula.latex}</BlockMath>
                 </div>
               </div>
 
-              <p className="text-sm text-gray-300 mb-6 font-medium leading-relaxed">
+              <p className="text-sm text-gray-400 mb-8 font-medium leading-relaxed">
                 {formula.description}
               </p>
 
-              {/* Variable legend so we aren't completely leaving non-math majors in the dark */}
-              <div className="mt-auto bg-void-900/50 p-4 rounded-xl border border-white/5">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-3 font-bold">Variables</p>
+              {/* Variable legend */}
+              <div className="mt-auto bg-void-950/50 p-6 rounded-2xl border border-white/5">
+                <p className="text-[9px] uppercase tracking-[0.3em] text-gray-600 mb-4 font-black">Nomenclature</p>
                 {formula.variables && formula.variables.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {formula.variables.map((variable, idx) => (
-                      <div key={idx} className="flex items-center gap-3 text-xs">
-                        <span className="text-neon-pink font-bold bg-void-950 px-2 py-0.5 rounded border border-white/5">
+                      <div key={idx} className="flex items-center gap-4 text-xs">
+                        <span className="text-neon-pink font-black bg-void-950 px-3 py-1 rounded-lg border border-white/5 min-w-[40px] text-center">
                           <InlineMath>{variable.symbol}</InlineMath>
                         </span>
-                        <span className="text-gray-400">{variable.meaning}</span>
+                        <span className="text-gray-500 font-medium">{variable.meaning}</span>
                       </div>
                     ))}
                   </div>

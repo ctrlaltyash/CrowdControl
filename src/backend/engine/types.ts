@@ -12,36 +12,48 @@ export enum CellType {
   MITIGATION = 4, // ai fixin things
 }
 
-/** Simulation parameters — V2 Physics Model */
-// big list of numbers dat make the magic happen
+/** Simulation parameters — V3 Research Model (Yashvardhan 2026) */
 export interface SimParams {
-  rows: number; // rows fr
-  cols: number; // cols fr
-  dt: number; // time zoom
-  rhoMax: number; // max peeps in a spot
-  rhoCrit: number; // when it gets scary
-  spreadFactor: number; // chill factor
-  pushFactor: number; // aggressive factor
-  minSpeedFactor: number; // slow walk
-  beta: number; // beta... not alpha?
-  pressureA: number; // pressure A
-  pressureK: number; // pressure K
-  pressureN: number; // pressure N
-  entryRate: number; // spawn rate
-  exitDrain: number; // despawn rate
-  renderEvery: number; // frame skip?
-  maxSteps: number; // game over
-  epsilon: number; // smol math
-  diffusivity: number; // drift
-  riskAlpha: number; // risk A
-  riskDelta: number; // risk D
-  riskGamma: number; // risk G
-  riskEta: number; // risk E
-  riskNormalization: number; // normal vibes
-  /** V2: Turbulence/Risk factor */
-  riskWeight: number; // how much risk we feelin
-  /** AI mitigation responsiveness: 0=passive, 1=balanced, 2=aggressive */
-  mitigationResponsiveness: number; // how fast the ai acts... no cap
+  rows: number;
+  cols: number;
+
+  dt: number;
+  
+  // 2.2 Density-Dependent Velocity
+  rhoMax: number; // \rho_{max}
+  beta: number;   // \beta
+  pushFactor: number; // Magnitude of -\nabla\phi
+
+  // 2.3 & 2.4 Density Evolution & Pressure Law
+  rhoCrit: number;     // \rho_{crit}
+  diffusivity: number; // D
+  pressureK: number;   // k
+  pressureN: number;   // n (must be > 2)
+  pressureA: number;   // a (Activation steepness)
+
+  // 2.5 Risk Functional
+  riskAlpha: number; // \alpha (Density weight)
+  riskDelta: number; // \delta (Distance weight)
+  riskGamma: number; // \gamma (Velocity weight)
+  riskEta: number;   // \eta (Pressure/Psi weight)
+  epsilon: number;   // \epsilon (Regularization)
+
+  // 2.6 Camaraderie Term
+  camaraderieM: number; // m (Crowding exponent)
+  camaraderieG: number; // G (Group strength)
+  camaraderieI: number; // I (Independence factor)
+
+  // Simulation Control
+  entryRate: number;
+  exitDrain: number;
+  renderEvery: number;
+  maxSteps: number;
+  
+  // Legacy / Misc
+  riskWeight: number;
+  mitigationResponsiveness: number;
+  spreadFactor: number; // often same as D
+  minSpeedFactor: number;
 }
 
 /** Simulation status */

@@ -71,10 +71,10 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
 
   return (
     // The main wrapper for the canvas. It's a glass-card, very chic.
-    <div ref={containerRef} className="glass-card p-6 flex min-h-[720px] flex-col border-white/5 relative group">
+    <div ref={containerRef} className="glass-card p-10 flex min-h-[760px] flex-col relative group">
       
       {/* The actual canvas wrapper - rounding the corners because sharp corners are an L */}
-      <div className="flex-1 min-h-[28rem] overflow-hidden rounded-[1.25rem] border border-white/10 bg-void-950 shadow-inner relative">
+      <div className="flex-1 min-h-[32rem] overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#010108] shadow-inner relative">
         
         {/* The canvas itself. This is where the pixels live. */}
         <canvas
@@ -83,24 +83,30 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({
           height={height}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          className="block w-full h-full max-w-full max-h-full touch-none cursor-crosshair"
+          className="block w-full h-full max-w-full max-h-full touch-none cursor-crosshair transition-opacity duration-1000"
           style={{ display: 'block', width: '100%', height: '100%' }}
         />
         
         {/* Subtle grid overlay to make it look techy. It's giving cyberpunk. */}
-        <div className="absolute inset-0 pointer-events-none opacity-1 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        <div className="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:32px_32px]"></div>
       </div>
 
       {/* Some aesthetic specs at the bottom. No cap, it just looks cool. */}
-      <div className="mt-5 flex items-center justify-between text-xs text-gray-500 font-mono uppercase tracking-widest px-2">
-        <div className="flex gap-6">
-          <span>Res: {width}x{height}</span>
-          <span>Engine: CFD V4</span>
+      <div className="mt-8 flex items-center justify-between text-[10px] text-gray-600 font-black uppercase tracking-[0.3em] px-4">
+        <div className="flex gap-10">
+          <div className="flex items-center gap-3">
+             <div className="w-1 h-1 bg-neon-cyan rounded-full"></div>
+             <span>Resolution: {width}x{height}</span>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="w-1 h-1 bg-neon-purple rounded-full"></div>
+             <span>Engine: CFD Core V4.2</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4 bg-void-950 px-6 py-2 rounded-full border border-white/5">
           {/* Status dot. Green means go, gray means no. */}
-          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-neon-green animate-pulse' : 'bg-gray-600'}`}></div>
-          <span>{isRunning ? 'Rendering' : 'Standby'}</span>
+          <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-neon-green animate-pulse shadow-[0_0_8px_rgba(132,204,22,0.8)]' : 'bg-gray-700'}`}></div>
+          <span className={isRunning ? 'text-gray-300' : 'text-gray-600'}>{isRunning ? 'Simulating Matrix' : 'Engine Standby'}</span>
         </div>
       </div>
     </div>

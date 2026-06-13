@@ -71,6 +71,17 @@ export default function App() {
   const [exitDrain, setExitDrain] = useState(DEFAULT_PARAMS.exitDrain);
   const [scenario, setScenario] = useState<'bottleneck' | 'stadium'>('bottleneck');
   
+  // Yashvardhan 2026 Model Parameters
+  const [rhoMax, setRhoMax] = useState(DEFAULT_PARAMS.rhoMax);
+  const [rhoCrit, setRhoCrit] = useState(DEFAULT_PARAMS.rhoCrit);
+  const [beta, setBeta] = useState(DEFAULT_PARAMS.beta);
+  const [pressureK, setPressureK] = useState(DEFAULT_PARAMS.pressureK);
+  const [pressureN, setPressureN] = useState(DEFAULT_PARAMS.pressureN);
+  const [diffusivity, setDiffusivity] = useState(DEFAULT_PARAMS.diffusivity);
+  const [camaraderieG, setCamaraderieG] = useState(DEFAULT_PARAMS.camaraderieG);
+  const [camaraderieI, setCamaraderieI] = useState(DEFAULT_PARAMS.camaraderieI);
+  const [camaraderieM, setCamaraderieM] = useState(DEFAULT_PARAMS.camaraderieM);
+  
   // Navigation state. Starting at the hero section because first impressions matter fr.
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -349,6 +360,15 @@ export default function App() {
       entryRate,
       exitDrain,
       pushFactor: pressureFactor,
+      rhoMax,
+      rhoCrit,
+      beta,
+      pressureK,
+      pressureN,
+      diffusivity,
+      camaraderieG,
+      camaraderieI,
+      camaraderieM,
       renderEvery: Math.max(1, Math.round(60 / fps)),
     };
     
@@ -363,7 +383,12 @@ export default function App() {
     setStatus('running');
     startTimeRef.current = performance.now() - (elapsed * 1000); // Resume time correctly
     sim.start();
-  }, [rows, cols, entryRate, exitDrain, pressureFactor, fps, editableCells, preventionEnabled, handleSimUpdate, prepareBackground, status, elapsed]);
+  }, [
+    rows, cols, entryRate, exitDrain, pressureFactor, fps, editableCells, 
+    preventionEnabled, handleSimUpdate, prepareBackground, status, elapsed,
+    rhoMax, rhoCrit, beta, pressureK, pressureN, diffusivity, 
+    camaraderieG, camaraderieI, camaraderieM
+  ]);
 
   // Stops the loop
   // pause the vibe
@@ -530,6 +555,27 @@ export default function App() {
             onPressureFactorChange={setPressureFactor}
             exitDrain={exitDrain}
             onExitDrainChange={setExitDrain}
+            
+            // Yashvardhan 2026 Model
+            rhoMax={rhoMax}
+            onRhoMaxChange={setRhoMax}
+            rhoCrit={rhoCrit}
+            onRhoCritChange={setRhoCrit}
+            beta={beta}
+            onBetaChange={setBeta}
+            pressureK={pressureK}
+            onPressureKChange={setPressureK}
+            pressureN={pressureN}
+            onPressureNChange={setPressureN}
+            diffusivity={diffusivity}
+            onDiffusivityChange={setDiffusivity}
+            camaraderieG={camaraderieG}
+            onCamaraderieGChange={setCamaraderieG}
+            camaraderieI={camaraderieI}
+            onCamaraderieIChange={setCamaraderieI}
+            camaraderieM={camaraderieM}
+            onCamaraderieMChange={setCamaraderieM}
+
             preventionEnabled={preventionEnabled}
             onPreventionChange={setPreventionEnabled}
             viewMode={viewMode}
@@ -550,8 +596,8 @@ export default function App() {
             elapsed={elapsed}
           />
 
-          <main className="lg:ml-72 pt-24 transition-all duration-300 ease-out pb-32">
-            <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <main className="lg:ml-80 pt-32 transition-all duration-500 ease-out pb-40">
+            <div className="max-w-screen-2xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
               
               {/* THE CANVAS SECTION */}
               {activeSection === 'canvas' && (
@@ -579,9 +625,9 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 xl:grid-cols-[1.95fr_1fr] gap-6">
+                  <div className="grid grid-cols-1 xl:grid-cols-[1.95fr_1fr] gap-12">
                     {/* The main simulation stage */}
-                    <div className="relative">
+                    <div className="flex flex-col">
                       <SimulationCanvas
                         canvasRef={liveCanvasRef}
                         width={1120}
@@ -591,7 +637,7 @@ export default function App() {
                         onPointerMove={paintCell}
                       />
                       
-                      {/* Floating dock for those fast controls */}
+                      {/* Integrated dock for those fast controls */}
                       <FloatingPlaybackDock
                         onPlay={handleStart}
                         onPause={handleStop}
@@ -603,49 +649,49 @@ export default function App() {
                     </div>
 
                     {/* Right-side details */}
-                    <div className="space-y-6">
-                      <div className="glass-card p-6">
-                        <h3 className="text-lg font-display font-bold text-white mb-6">Live Telemetry</h3>
-                        <div className="space-y-5">
-                          <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                            <span className="text-gray-400 text-sm font-semibold">Ticks Processed</span>
-                            <span className="font-mono text-neon-cyan font-bold">{step}</span>
+                    <div className="space-y-8">
+                      <div className="glass-card p-10">
+                        <h3 className="text-xl font-display font-bold text-white mb-8 tracking-tight">Live Telemetry</h3>
+                        <div className="space-y-6">
+                          <div className="flex justify-between items-center pb-5 border-b border-white/5">
+                            <span className="text-gray-400 text-xs font-black uppercase tracking-[0.2em]">Ticks Processed</span>
+                            <span className="font-mono text-neon-cyan text-xl font-bold">{step}</span>
                           </div>
-                          <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                            <span className="text-gray-400 text-sm font-semibold">Sim Time (s)</span>
-                            <span className="font-mono text-white font-bold">{elapsed.toFixed(1)}</span>
+                          <div className="flex justify-between items-center pb-5 border-b border-white/5">
+                            <span className="text-gray-400 text-xs font-black uppercase tracking-[0.2em]">Sim Time (s)</span>
+                            <span className="font-mono text-white text-xl font-bold">{elapsed.toFixed(1)}s</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-sm font-semibold">Threat Vectors</span>
-                            <span className={`font-mono font-bold ${alerts.length > 0 ? 'text-hazard-crit' : 'text-neon-green'}`}>
+                            <span className="text-gray-400 text-xs font-black uppercase tracking-[0.2em]">Threat Vectors</span>
+                            <span className={`font-mono text-xl font-bold ${alerts.length > 0 ? 'text-hazard-crit' : 'text-neon-green'}`}>
                               {alerts.length}
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="glass-card p-6">
-                        <h3 className="text-lg font-display font-bold text-white mb-6">HUD Legend</h3>
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-5 h-5 rounded-md bg-void-700 border border-white/10 shadow-inner"></div>
-                            <span className="text-sm font-medium text-gray-300">Wall [1]</span>
+                      <div className="glass-card p-10">
+                        <h3 className="text-xl font-display font-bold text-white mb-8 tracking-tight">HUD Legend</h3>
+                        <div className="space-y-5">
+                          <div className="flex items-center gap-5">
+                            <div className="w-6 h-6 rounded-lg bg-void-700 border border-white/10 shadow-inner"></div>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Wall [1]</span>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-5 h-5 rounded-md bg-neon-cyan/40 border border-neon-cyan shadow-glow-cyan"></div>
-                            <span className="text-sm font-medium text-gray-300">Spawner [2]</span>
+                          <div className="flex items-center gap-5">
+                            <div className="w-6 h-6 rounded-lg bg-neon-cyan/40 border border-neon-cyan shadow-glow-cyan"></div>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Spawner [2]</span>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-5 h-5 rounded-md bg-neon-green/40 border border-neon-green shadow-glow-green"></div>
-                            <span className="text-sm font-medium text-gray-300">Exit / Sink [3]</span>
+                          <div className="flex items-center gap-5">
+                            <div className="w-6 h-6 rounded-lg bg-neon-green/40 border border-neon-green shadow-glow-green"></div>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Exit / Sink [3]</span>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <div className="w-5 h-5 rounded-md border-2 border-dashed border-gray-500"></div>
-                            <span className="text-sm font-medium text-gray-300">Eraser [4]</span>
+                          <div className="flex items-center gap-5">
+                            <div className="w-6 h-6 rounded-lg border-2 border-dashed border-gray-500"></div>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Eraser [4]</span>
                           </div>
-                          <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/5">
-                            <div className="w-5 h-5 rounded-md bg-neon-pink border border-neon-pink shadow-glow-pink"></div>
-                            <span className="text-sm font-medium text-neon-pink">AI Mitigation Wall</span>
+                          <div className="flex items-center gap-5 mt-8 pt-6 border-t border-white/5">
+                            <div className="w-6 h-6 rounded-lg bg-neon-pink border border-neon-pink shadow-glow-pink"></div>
+                            <span className="text-xs font-bold text-neon-pink uppercase tracking-widest">AI Mitigation Wall</span>
                           </div>
                         </div>
                       </div>

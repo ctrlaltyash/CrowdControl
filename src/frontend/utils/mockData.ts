@@ -52,84 +52,83 @@ export interface SimulationState {
 
 export const FORMULAS: Formula[] = [
   {
-    id: 'continuity-eq',
-    title: 'Continuity Equation',
-    latex: '\\frac{\\partial \\rho}{\\partial t} + \\nabla \\cdot (\\rho \\mathbf{v}) = 0',
+    id: 'harmonic-potential',
+    title: 'Harmonic Potential Field',
+    latex: '\\nabla^2 \\phi = 0, \\quad \\phi|_{\\partial\\Omega_{exit}} = 0',
     category: 'fluid-dynamics',
-    description: 'Conservation of mass in fluid flow',
+    description: 'Guiding direction field via Laplace equation',
     variables: [
-      { symbol: '\\rho', meaning: 'Density' },
-      { symbol: '\\mathbf{v}', meaning: 'Velocity vector' },
-      { symbol: 't', meaning: 'Time' },
+      { symbol: '\\phi', meaning: 'Navigation potential' },
+      { symbol: '\\nabla^2', meaning: 'Laplace operator' },
     ],
     explanation:
-      'Fundamental principle stating that mass cannot be created or destroyed. The rate of density change plus the divergence of mass flux equals zero.',
+      'Solves for a smooth potential field where the gradient -\\nabla\\phi provides the optimal direction toward exits while respecting geometric constraints.',
   },
   {
-    id: 'momentum-eq',
-    title: 'Momentum Equation',
-    latex: '\\rho \\frac{D\\mathbf{v}}{Dt} = -\\nabla p + \\mu \\nabla^2 \\mathbf{v} + \\mathbf{f}',
+    id: 'density-velocity',
+    title: 'Density-Dependent Velocity',
+    latex: '\\mathbf{v}[\\rho] = -\\nabla \\phi \\left(1 - \\frac{\\rho}{\\rho_{max}}\\right)^\\beta',
     category: 'fluid-dynamics',
-    description: "Newton's second law applied to fluid elements",
+    description: 'Velocity degradation under congestion',
     variables: [
-      { symbol: 'p', meaning: 'Pressure' },
-      { symbol: '\\mu', meaning: 'Dynamic viscosity' },
-      { symbol: '\\mathbf{f}', meaning: 'Body forces' },
+      { symbol: '\\rho_{max}', meaning: 'Maximum capacity' },
+      { symbol: '\\beta', meaning: 'Mobility exponent' },
     ],
     explanation:
-      "Expresses Newton's second law for fluids. Acceleration equals pressure gradient, viscous forces, and external forces normalized by density.",
+      'Models the reduction in walking speed as local density approaches saturation. As density nears rho_max, mobility vanishes.',
   },
   {
-    id: 'risk-assessment',
-    title: 'Risk Assessment Model',
-    latex: 'R(x,y,t) = \\alpha \\rho + \\delta \\partial_t \\rho + \\gamma \\|\\nabla v\\| + \\eta p',
+    id: 'density-evolution',
+    title: 'Density Evolution Equation',
+    latex: '\\partial_t \\rho + \\nabla \\cdot (\\rho \\mathbf{v}) = D\\nabla^2 \\rho - \\nabla \\cdot (\\rho \\nabla P(\\rho))',
+    category: 'fluid-dynamics',
+    description: 'Nonlinear advection-diffusion-pressure system',
+    variables: [
+      { symbol: 'D', meaning: 'Diffusion coefficient' },
+      { symbol: 'P(\\rho)', meaning: 'Nonlinear pressure' },
+    ],
+    explanation:
+      'The core governing equation capturing directed flow (advection), random spreading (diffusion), and high-density repulsion (pressure).',
+  },
+  {
+    id: 'pressure-law',
+    title: 'Smooth Pressure Law',
+    latex: 'P(\\rho) = k \\left(\\frac{\\rho}{\\rho_{crit}}\\right)^n \\frac{1}{1 + e^{-a(\\rho - \\rho_{crit})}}',
+    category: 'fluid-dynamics',
+    description: 'Super-quadratic pressure activation',
+    variables: [
+      { symbol: '\\rho_{crit}', meaning: 'Critical density' },
+      { symbol: 'a', meaning: 'Activation steepness' },
+    ],
+    explanation:
+      'Defines the repulsive force that emerges when density exceeds the critical threshold. Uses a sigmoid activation to ensure differentiability.',
+  },
+  {
+    id: 'risk-functional',
+    title: 'Risk Functional Index',
+    latex: 'R = \\alpha \\frac{\\rho}{\\rho_{max}} + \\delta \\frac{1}{d + \\epsilon} + \\gamma \\frac{1}{|v| + \\epsilon} + \\eta \\Psi(\\rho) - c',
     category: 'risk-assessment',
-    description: 'Multi-factor crowd safety risk quantification',
+    description: 'Multi-factor stampede risk quantification',
     variables: [
-      { symbol: 'R', meaning: 'Risk index' },
-      { symbol: '\\alpha, \\delta, \\gamma, \\eta', meaning: 'Weighting parameters' },
+      { symbol: '\\Psi', meaning: 'Instability indicator' },
+      { symbol: 'c', meaning: 'Camaraderie term' },
+      { symbol: '\\epsilon', meaning: 'Regularization' },
     ],
     explanation:
-      'Combines density, density acceleration, velocity gradient, and pressure into a composite risk metric for predicting dangerous crowd behavior.',
+      'Quantifies local danger by combining density, proximity to constraints, stagnancy, and structural instability precursors.',
   },
   {
-    id: 'vorticity',
-    title: 'Vorticity Tensor',
-    latex: '\\omega_{ij} = \\frac{1}{2}\\left(\\frac{\\partial v_j}{\\partial x_i} - \\frac{\\partial v_i}{\\partial x_j}\\right)',
-    category: 'fluid-dynamics',
-    description: 'Rotation and shear in fluid flow',
+    id: 'camaraderie-term',
+    title: 'Camaraderie Term',
+    latex: 'c(x,t) = \\frac{G}{N_{local}} (1-I) \\left(1 - \\frac{\\rho}{\\rho_{max}}\\right)^m',
+    category: 'risk-assessment',
+    description: 'Cooperative effects and group resilience',
     variables: [
-      { symbol: '\\omega_{ij}', meaning: 'Vorticity components' },
-      { symbol: 'v_i, v_j', meaning: 'Velocity components' },
+      { symbol: 'G', meaning: 'Group strength' },
+      { symbol: 'I', meaning: 'Independence factor' },
     ],
     explanation:
-      'Quantifies local rotational motion in the fluid. Essential for understanding flow patterns and identifying areas of high shear.',
-  },
-  {
-    id: 'energy-conservation',
-    title: 'Energy Conservation',
-    latex: '\\frac{\\partial E}{\\partial t} + \\nabla \\cdot (E\\mathbf{v}) = -\\nabla \\cdot \\mathbf{q} - p(\\nabla \\cdot \\mathbf{v})',
-    category: 'fluid-dynamics',
-    description: 'First law of thermodynamics for fluid systems',
-    variables: [
-      { symbol: 'E', meaning: 'Total energy' },
-      { symbol: '\\mathbf{q}', meaning: 'Heat flux' },
-    ],
-    explanation:
-      'Energy equation governing heat transfer and work done by pressure forces in the crowd dynamics simulation.',
-  },
-  {
-    id: 'pressure-surge',
-    title: 'Pressure Surge Model',
-    latex: 'p_{surge} = A e^{-k \\Delta \\rho} \\left(1 + N \\left(\\frac{\\|\\nabla v\\|}{v_{max}}\\right)^N\\right)',
-    category: 'mitigation',
-    description: 'Pressure buildup from crowd density and velocity gradients',
-    variables: [
-      { symbol: 'A, k, N', meaning: 'Material constants' },
-      { symbol: '\\Delta \\rho', meaning: 'Density deviation' },
-    ],
-    explanation:
-      'Models localized pressure surges that emerge from high density regions combined with steep velocity gradients.',
+      'Represents social cohesion that mitigates risk. Coordination decreases as density increases, reflecting the breakdown of order in high-stress crowds.',
   },
 ];
 

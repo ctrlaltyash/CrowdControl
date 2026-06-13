@@ -1,7 +1,7 @@
 import { buildBottleneckScenario } from '../src/backend/engine/scenarios.ts';
 import { runSimulationWithMetrics } from '../src/backend/engine/metrics.ts';
 import { createSimParams, DEFAULT_PARAMS } from '../src/shared/simParams.ts';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync } from 'fs';
 
 const scenario = buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
 

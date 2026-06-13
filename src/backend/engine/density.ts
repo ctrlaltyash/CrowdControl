@@ -242,12 +242,9 @@ export function computeRiskV3(
     riskDelta,
     riskGamma,
     riskEta,
-    riskNormalization,
-    riskWeight,
   } = p;
 
   const maxDistance = Math.max(1, p.rows + p.cols);
-  const normalization = riskNormalization > 0 ? riskNormalization : 1;
   const maxSpeed = Math.max(1, p.pushFactor);
 
   for (let i = 0; i < rho.length; i++) {
@@ -276,7 +273,7 @@ export function computeRiskV3(
       riskDelta * distanceRisk +
       riskGamma * speedRisk +
       riskEta * congestionRisk
-    ) / normalization * riskWeight;
+    ) 
 
     risk[i] = Math.min(1, Math.max(0, Number.isFinite(rawRisk) ? rawRisk : 0));
   }

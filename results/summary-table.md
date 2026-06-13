@@ -1,4 +1,4 @@
 | Scenario Name | Peak Density | Peak Risk | High-Risk Area Percentage | Average Velocity | Total Overshoot Count | Total Overshoot Magnitude | Max Overshoot Magnitude | Total Evacuation Time (s) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Festival Bottleneck | 6.00 | 0.879 | 49.95% | 0.996 | 5858275 | 20809236.2328 | 2.5738 | 400.00 |
-| Stadium Rush | 6.00 | 0.844 | 49.85% | 1.000 | 41315418 | 146104849.3284 | 3.4835 | 400.00 |
+| Festival Bottleneck | 4.18 | 0.339 | 0.00% | 0.996 | 0 | 0.0000 | 0.0000 | 150.00 |
+| Stadium Rush | 3.84 | 0.276 | 0.00% | 1.000 | 0 | 0.0000 | 0.0000 | 150.00 |

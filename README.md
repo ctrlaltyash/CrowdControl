@@ -1,5 +1,5 @@
 # CrowdControl
-// yo dis project is absolute gas fr fr
+/ yo dis project is absolute gas fr fr
 // no cap we stoppin stampedes before they even start
 An Anti-stmapede prevention system for infrastructure, working mainly on prevention and prediction of stampedes, before they even happen.
 
@@ -24,3 +24,4 @@ density-dependent mobility and pressure-driven effects to capture this transitio
 This model provides a unified framework for capturing transitions between free flow, con-
 gestion, and instability in crowds. By combining nonlinear transport and pressure effects, it
 enables realistic simulation of high-risk scenarios with computational efficiency.
+/
