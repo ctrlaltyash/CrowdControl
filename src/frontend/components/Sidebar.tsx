@@ -83,11 +83,13 @@ interface SectionHeaderProps {
 
 const SectionHeader = ({ id, icon: Icon, title, colorClass = "text-neon-cyan", isExpanded, onToggle }: SectionHeaderProps) => (
   <button
+    type="button"
     onClick={() => onToggle(id)}
-    className="flex items-center justify-between w-full mb-4 text-white font-display font-bold group"
+    className="flex items-center justify-between w-full mb-4 text-foreground font-display font-semibold group rounded-lg"
+    aria-expanded={isExpanded}
   >
     <div className="flex items-center gap-3">
-      <div className={`p-2 rounded-lg bg-void-950 border border-white/5 group-hover:border-white/10 transition-colors ${colorClass}`}>
+      <div className={`p-2 rounded-lg bg-background-base border border-border-default group-hover:border-border-hover transition-colors ${colorClass}`}>
         <Icon size={16} />
       </div>
       <h3 className="text-sm tracking-tight">{title}</h3>
@@ -169,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       data-sidebar
       ref={sidebarRef}
-      className={`fixed inset-y-0 left-0 z-40 w-80 overflow-y-auto bg-void-950/80 backdrop-blur-3xl border-r border-white/5 transition-transform duration-500 pt-24 pb-12 custom-scrollbar ${
+      className={`fixed inset-y-0 left-0 z-40 w-80 overflow-y-auto bg-background-base/84 backdrop-blur-3xl border-r border-border-default transition-transform duration-300 pt-24 pb-12 custom-scrollbar ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}
     >
@@ -195,7 +197,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="range" min="50" max="150" step="10"
                 value={gridSize}
                 onChange={(e) => onGridSizeChange(Number(e.target.value))}
-                className="slider-input"
+                className="sci-slider-input"
                 disabled={isRunning}
               />
             </div>
@@ -209,19 +211,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 type="range" min="30" max="120" step="5"
                 value={fps}
                 onChange={(e) => onFpsChange(Number(e.target.value))}
-                className="slider-input"
+                className="sci-slider-input"
                 disabled={isRunning}
               />
             </div>
 
             <div className="pt-4 border-t border-white/5">
               <label className="slider-label uppercase mb-3">Lens Filter</label>
-              <div className="grid grid-cols-2 gap-2 bg-void-950/50 p-1 rounded-xl border border-white/5">
+              <div className="grid grid-cols-2 gap-2 bg-background-base/60 p-1 rounded-lg border border-border-default">
                 <button
                   type="button"
                   onClick={() => onViewModeChange('density')}
-                  className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    viewMode === 'density' ? 'bg-neon-cyan text-void-950 shadow-glow-cyan' : 'text-gray-500 hover:text-white'
+                  className={`py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'density' ? 'bg-accent text-white shadow-accent' : 'text-foreground-muted hover:text-white'
                   }`}
                 >
                   Density
@@ -229,8 +231,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={() => onViewModeChange('risk')}
-                  className={`py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                    viewMode === 'risk' ? 'bg-neon-pink text-white shadow-glow-pink' : 'text-gray-500 hover:text-white'
+                  className={`py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                    viewMode === 'risk' ? 'bg-accent-bright text-white shadow-accent' : 'text-foreground-muted hover:text-white'
                   }`}
                 >
                   Risk
@@ -268,7 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <input
                   type="range" min={p.min} max={p.max} step={p.step}
                   value={Number(p.val)} onChange={(e) => p.fn(Number(e.target.value))}
-                  className="slider-input" disabled={isRunning}
+                  className="sci-slider-input" disabled={isRunning}
                 />
               </div>
             ))}
@@ -300,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <input
                   type="range" min={p.min} max={p.max} step={p.step}
                   value={p.val} onChange={(e) => p.fn(Number(e.target.value))}
-                  className="slider-input" disabled={isRunning}
+                  className="sci-slider-input pink-accent" disabled={isRunning}
                 />
               </div>
             ))}
@@ -327,7 +329,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <input
                 type="range" min="10" max="140" step="2"
                 value={entryRate} onChange={(e) => onEntryRateChange(Number(e.target.value))}
-                className="slider-input" disabled={isRunning}
+                className="sci-slider-input" disabled={isRunning}
               />
             </div>
 
@@ -339,7 +341,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <input
                 type="range" min="1" max="6" step="0.1"
                 value={pressureFactor} onChange={(e) => onPressureFactorChange(Number(e.target.value))}
-                className="slider-input" disabled={isRunning}
+                className="sci-slider-input pink-accent" disabled={isRunning}
               />
             </div>
 
@@ -351,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <input
                 type="range" min="0.1" max="0.8" step="0.05"
                 value={exitDrain} onChange={(e) => onExitDrainChange(Number(e.target.value))}
-                className="slider-input" disabled={isRunning}
+                className="sci-slider-input" disabled={isRunning}
               />
             </div>
           </div>
@@ -361,10 +363,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="glass-card p-6" data-sidebar-card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-void-950 border border-white/5 text-neon-purple shadow-glow-pink">
+              <div className="p-2 rounded-lg bg-background-base border border-border-default text-accent-bright shadow-accent">
                 <ShieldAlert size={16} />
               </div>
-              <h3 className="text-sm font-bold text-white tracking-tight">AI Defense</h3>
+              <h3 className="text-sm font-semibold text-foreground tracking-tight">AI Defense</h3>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input 
@@ -373,7 +375,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 checked={preventionEnabled}
                 onChange={(e) => onPreventionChange(e.target.checked)}
               />
-              <div className="w-11 h-6 bg-void-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neon-purple shadow-glow-pink"></div>
+              <div className="w-11 h-6 bg-white/[0.08] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-white/20 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"></div>
             </label>
           </div>
         </div>
@@ -395,10 +397,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={tool}
                   onClick={() => onDrawToolChange(tool)}
-                  className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  className={`py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
                     drawTool === tool 
-                      ? 'bg-white text-void-950 border-white shadow-glass' 
-                      : 'bg-void-900 text-gray-500 border-white/5 hover:border-white/10'
+                      ? 'bg-accent text-white border-border-accent shadow-accent' 
+                      : 'bg-white/[0.04] text-foreground-muted border-border-default hover:border-border-hover hover:text-white'
                   }`}
                 >
                   {label}
@@ -414,7 +416,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <input
                 type="range" min="1" max="10"
                 value={brushSize} onChange={(e) => onBrushSizeChange(Number(e.target.value))}
-                className="slider-input" disabled={isRunning}
+                className="sci-slider-input" disabled={isRunning}
               />
             </div>
 
@@ -424,10 +426,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={option}
                   onClick={() => onScenarioChange(option as 'bottleneck' | 'stadium')}
-                  className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  className={`w-full py-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
                     scenario === option 
-                      ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/30 shadow-glow-cyan' 
-                      : 'bg-void-900 text-gray-500 border-white/5 hover:border-white/10'
+                      ? 'bg-accent/[0.16] text-white border-border-accent shadow-accent' 
+                      : 'bg-white/[0.04] text-foreground-muted border-border-default hover:border-border-hover hover:text-white'
                   }`}
                 >
                   {option} Matrix
@@ -436,7 +438,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={onClearLayout}
-                className="w-full py-4 mt-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] bg-hazard-crit/5 text-hazard-crit border border-hazard-crit/20 hover:bg-hazard-crit/10 transition-all"
+                className="w-full py-4 mt-4 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] bg-hazard-crit/5 text-hazard-crit border border-hazard-crit/20 hover:bg-hazard-crit/10 transition-all"
                 disabled={isRunning}
               >
                 Reset Canvas
@@ -449,4 +451,3 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
-

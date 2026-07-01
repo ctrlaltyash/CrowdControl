@@ -26,7 +26,7 @@ export const FormulaShowcase: React.FC = () => {
       y: 0,
       duration: 0.6,
       stagger: 0.1,
-      ease: 'back.out(1.5)',
+      ease: 'expo.out',
     });
   }, []);
 
@@ -35,10 +35,10 @@ export const FormulaShowcase: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         
         <div className="mb-16 text-center">
-          <h2 className="text-5xl font-display font-black mb-6 text-white tracking-tight">
-            The <span className="text-neon-cyan">Core</span> Calculus
+          <h2 className="text-4xl sm:text-5xl font-display font-semibold mb-6 gradient-heading tracking-tight">
+            The <span className="gradient-accent-text">Core</span> Calculus
           </h2>
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg font-medium leading-relaxed">
+          <p className="text-foreground-muted max-w-2xl mx-auto text-lg font-normal leading-relaxed">
             Predictive analytics powered by high-fidelity fluid dynamics and nonlinear transport models.
           </p>
         </div>
@@ -49,7 +49,7 @@ export const FormulaShowcase: React.FC = () => {
             <div
               key={formula.id}
               ref={(el) => { cardsRef.current[index] = el; }}
-              className="glass-card p-10 h-full flex flex-col group opacity-0 translate-y-6 hover:-translate-y-2 transition-all duration-500"
+              className="glass-card p-8 h-full flex flex-col group opacity-0 translate-y-6 hover:-translate-y-1 transition-all duration-300"
             >
               {/* Top badge to show what category of math we're flexing */}
               <div className="mb-8">
@@ -68,37 +68,37 @@ export const FormulaShowcase: React.FC = () => {
                 </span>
               </div>
 
-              <h3 className="text-2xl font-display font-black text-white mb-6 group-hover:text-neon-cyan transition-colors tracking-tight">
+              <h3 className="text-2xl font-display font-semibold text-white mb-6 group-hover:text-accent-bright transition-colors tracking-tight">
                 {formula.title}
               </h3>
 
               {/* The actual math flex. KaTeX renders it beautifully. */}
-              <div className="bg-[#02020a] rounded-[2rem] p-8 mb-8 overflow-x-auto border border-white/5 shadow-inner flex-grow flex items-center justify-center min-h-[140px]">
+              <div className="bg-background-deep rounded-2xl p-6 mb-8 overflow-x-auto border border-border-default shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex-grow flex items-center justify-center min-h-[140px]">
                 <div className="text-white text-xl">
                   <BlockMath>{formula.latex}</BlockMath>
                 </div>
               </div>
 
-              <p className="text-sm text-gray-400 mb-8 font-medium leading-relaxed">
+              <p className="text-sm text-foreground-muted mb-8 font-medium leading-relaxed">
                 {formula.description}
               </p>
 
               {/* Variable legend */}
-              <div className="mt-auto bg-void-950/50 p-6 rounded-2xl border border-white/5">
-                <p className="text-[9px] uppercase tracking-[0.3em] text-gray-600 mb-4 font-black">Nomenclature</p>
+              <div className="mt-auto bg-background-base/60 p-5 rounded-2xl border border-border-default">
+                <p className="text-[9px] uppercase tracking-[0.24em] text-foreground-muted mb-4 font-mono font-bold">Nomenclature</p>
                 {formula.variables && formula.variables.length > 0 ? (
                   <div className="space-y-3">
                     {formula.variables.map((variable, idx) => (
                       <div key={idx} className="flex items-center gap-4 text-xs">
-                        <span className="text-neon-pink font-black bg-void-950 px-3 py-1 rounded-lg border border-white/5 min-w-[40px] text-center">
+                        <span className="text-accent-bright font-black bg-background-base px-3 py-1 rounded-lg border border-border-default min-w-[40px] text-center">
                           <InlineMath>{variable.symbol}</InlineMath>
                         </span>
-                        <span className="text-gray-500 font-medium">{variable.meaning}</span>
+                        <span className="text-foreground-muted font-medium">{variable.meaning}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-xs italic">{formula.explanation}</p>
+                  <p className="text-foreground-muted text-xs italic">{formula.explanation}</p>
                 )}
               </div>
             </div>

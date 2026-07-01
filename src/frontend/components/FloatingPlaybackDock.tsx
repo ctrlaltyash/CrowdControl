@@ -1,17 +1,20 @@
-// Floating media controls bc scrolling to da sidebar is mid. 
-// Highkey useful for debugging, no cap.
-import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, SkipForward, ShieldCheck, Activity } from 'lucide-react';
 import { setupButtonRipple, setupMagneticHover } from '../utils/gsapAnimations';
-import { useEffect, useRef } from 'react';
 
-// props for da dock, keeping it 100
 interface FloatingPlaybackDockProps {
   onPlay: () => void;
   onPause: () => void;
   onReset: () => void;
   onStep?: () => void;
   isRunning: boolean;
-  status: string;
+  viewMode: 'density' | 'risk';
+  onViewModeChange: (mode: 'density' | 'risk') => void;
+  preventionEnabled: boolean;
+  onPreventionChange: (value: boolean) => void;
+  step: number;
+  fps: number;
+  onFpsChange: (fps: number) => void;
 }
 
 export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
@@ -20,18 +23,24 @@ export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
   onReset,
   onStep,
   isRunning,
-  status,
+  viewMode,
+  onViewModeChange,
+  preventionEnabled,
+  onPreventionChange,
+  step,
+  fps,
+  onFpsChange,
 }) => {
   const dockRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // magnetic hover effects so da buttons follow yo mouse slightly. magnetic rizz fr.
+  // magnetic hover effects for premium tactile feedback
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     buttonRefs.current.forEach((button) => {
       if (!button) return;
       setupButtonRipple(button);
-      cleanups.push(setupMagneticHover(button, 12));
+      cleanups.push(setupMagneticHover(button, 10));
     });
     return () => cleanups.forEach((c) => c());
   }, []);
@@ -39,64 +48,125 @@ export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
   return (
     <div
       ref={dockRef}
-      className="mt-6 flex items-center justify-between gap-4 p-3 rounded-[2rem] bg-white/[0.02] border border-white/5 shadow-inner backdrop-blur-md"
+      className="mt-6 flex flex-col md:flex-row items-center justify-between gap-5 p-4 rounded-2xl bg-white/[0.04] border border-border-default shadow-glass backdrop-blur-md"
     >
-      <div className="flex items-center gap-3">
+      {/* Left Segment: Playback controls and Step Counter */}
+      <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
         <button
           ref={(el) => { buttonRefs.current[0] = el; }}
           onClick={onReset}
-          className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] text-gray-400 hover:text-white transition-all active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-foreground-muted hover:text-white transition-all active:scale-95 border border-border-default"
           title="Reset Simulation (R)"
+          aria-label="Reset simulation"
         >
-          <RotateCcw size={22} />
+          <RotateCcw size={18} />
         </button>
 
         <button
-          ref={(el) => { buttonRefs.current[2] = el; }}
+          ref={(el) => { buttonRefs.current[1] = el; }}
           onClick={onStep}
-          className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] text-gray-400 hover:text-white transition-all active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-foreground-muted hover:text-white transition-all active:scale-95 border border-border-default"
           title="Step Forward"
+          aria-label="Step simulation forward"
         >
-          <SkipForward size={22} />
+          <SkipForward size={18} />
         </button>
+
+        <div className="telemetry-badge flex items-center gap-2 text-[10px] text-foreground-muted select-none">
+          <Activity size={12} className="text-accent-bright" />
+          STEP: <span className="text-white font-mono">{step}</span>
+        </div>
       </div>
 
-      {/* da big play/pause button. swaps colors based on state, real flashy */}
-      <div className="flex-1 flex justify-center">
+      {/* Central Segment: Main Play/Pause Action */}
+      <div className="flex-1 flex justify-center w-full md:w-auto">
         {isRunning ? (
           <button
-            ref={(el) => { buttonRefs.current[1] = el; }}
+            ref={(el) => { buttonRefs.current[2] = el; }}
             onClick={onPause}
-            className="group relative px-10 py-4 rounded-2xl bg-neon-pink text-white shadow-glow-pink hover:bg-fuchsia-400 active:scale-95 transition-all overflow-hidden"
+            className="group relative px-10 py-[15px] rounded-lg bg-accent-bright text-white shadow-accent hover:bg-accent active:scale-95 transition-all overflow-hidden w-full max-w-[240px] md:w-auto"
             title="Pause (Space)"
           >
-            <div className="relative z-10 flex items-center gap-3">
-              <Pause size={24} fill="currentColor" />
-              <span className="text-sm font-black uppercase tracking-widest">Halt Engine</span>
+            <div className="relative z-10 flex items-center justify-center gap-3">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              </span>
+              <Pause size={18} fill="currentColor" />
+              <span className="text-xs font-black uppercase tracking-widest">Halt Engine</span>
             </div>
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         ) : (
           <button
-            ref={(el) => { buttonRefs.current[1] = el; }}
+            ref={(el) => { buttonRefs.current[2] = el; }}
             onClick={onPlay}
-            className="group relative px-10 py-4 rounded-2xl bg-neon-cyan text-void-950 shadow-glow-cyan hover:bg-cyan-400 active:scale-95 transition-all overflow-hidden"
+            className="group relative px-10 py-[15px] rounded-lg bg-accent text-white shadow-accent hover:bg-accent-bright active:scale-95 transition-all overflow-hidden w-full max-w-[240px] md:w-auto"
             title="Play (Space)"
           >
-            <div className="relative z-10 flex items-center gap-3">
-              <Play size={24} fill="currentColor" />
-              <span className="text-sm font-black uppercase tracking-widest">Initiate Sim</span>
+            <div className="relative z-10 flex items-center justify-center gap-3">
+              <Play size={18} fill="currentColor" />
+              <span className="text-xs font-black uppercase tracking-widest">Initiate Sim</span>
             </div>
             <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-4 px-6 py-3 bg-void-950/50 rounded-2xl border border-white/5 min-w-[140px] justify-center">
-        <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-neon-green animate-pulse shadow-[0_0_12px_rgba(132,204,22,0.6)]' : 'bg-gray-600'}`} />
-        <span className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 select-none">
-          {status}
-        </span>
+      {/* Right Segment: Speed Selector & Layer HUD */}
+      <div className="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto">
+        {/* Tick Rate Speed Toggle */}
+        <div className="flex items-center bg-background-base/60 border border-border-default rounded-lg p-1">
+          {[30, 60, 120].map((rate) => (
+            <button
+              key={rate}
+              onClick={() => onFpsChange(rate)}
+              className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                fps === rate
+                  ? 'bg-accent/[0.18] text-white shadow-[0_0_0_1px_rgba(94,106,210,0.28)]'
+                  : 'text-foreground-muted hover:text-white'
+              }`}
+            >
+              {rate === 30 ? '0.5x' : rate === 60 ? '1.0x' : '2.0x'}
+            </button>
+          ))}
+        </div>
+
+        {/* View Mode Layer Toggles */}
+        <div className="flex items-center bg-background-base/60 border border-border-default rounded-lg p-1">
+          <button
+            onClick={() => onViewModeChange('density')}
+            className={`layer-toggle-btn px-4 py-2 rounded-lg border border-transparent ${
+              viewMode === 'density' ? 'active-cyan' : 'text-gray-500 hover:text-white'
+            }`}
+            title="Density Heatmap"
+          >
+            Density
+          </button>
+          <button
+            onClick={() => onViewModeChange('risk')}
+            className={`layer-toggle-btn px-4 py-2 rounded-lg border border-transparent ${
+              viewMode === 'risk' ? 'active-pink' : 'text-gray-500 hover:text-white'
+            }`}
+            title="Risk Analysis"
+          >
+            Risk
+          </button>
+        </div>
+
+        {/* AI Mitigation Trigger */}
+        <button
+          onClick={() => onPreventionChange(!preventionEnabled)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-[10px] font-bold uppercase tracking-widest ${
+            preventionEnabled
+              ? 'bg-accent/[0.16] border-border-accent text-white shadow-accent'
+              : 'bg-white/[0.02] border-border-default text-foreground-muted hover:text-white hover:bg-white/[0.05]'
+          }`}
+          title="Toggle AI Mitigation Walls"
+        >
+          <ShieldCheck size={14} />
+          Mitigate
+        </button>
       </div>
     </div>
   );

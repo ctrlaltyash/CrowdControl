@@ -15022,7 +15022,7 @@
     },
     "numericalMetrics": {
       "massConservationError": 4328.082702058548,
-      "runtimeMs": 30191.239686000004,
+      "runtimeMs": 43293.817267,
       "rows": 100,
       "cols": 100,
       "numTimesteps": 15000
@@ -145076,7 +145076,7 @@
     },
     "numericalMetrics": {
       "massConservationError": 2417.8386255253363,
-      "runtimeMs": 30585.747218999997,
+      "runtimeMs": 47059.575124999996,
       "rows": 100,
       "cols": 100,
       "numTimesteps": 15000

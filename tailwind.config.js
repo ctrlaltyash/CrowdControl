@@ -1,51 +1,89 @@
 /** @type {import('tailwindcss').Config} */
-// Tailwind config, no cap. This is where the style lives.
 export default {
-  // fr fr, this tells tailwind where our files are at so it doesn't ghost our classes
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    // Extending the default theme because we built different.
     extend: {
       colors: {
-        // this color palette is lowkey giving cyber-y2k vibes
+        background: {
+          deep: '#020203',
+          base: '#050506',
+          elevated: '#0a0a0c',
+        },
+        surface: {
+          DEFAULT: 'rgba(255,255,255,0.05)',
+          hover: 'rgba(255,255,255,0.08)',
+        },
+        foreground: {
+          DEFAULT: '#EDEDEF',
+          muted: '#8A8F98',
+          subtle: 'rgba(255,255,255,0.60)',
+        },
+        accent: {
+          DEFAULT: '#5E6AD2',
+          bright: '#6872D9',
+          soft: 'rgba(94,106,210,0.14)',
+          glow: 'rgba(94,106,210,0.30)',
+        },
+        border: {
+          default: 'rgba(255,255,255,0.06)',
+          hover: 'rgba(255,255,255,0.10)',
+          accent: 'rgba(94,106,210,0.30)',
+        },
         void: {
-          950: '#030014', // deepest void, major dark mode energy
-          900: '#09090b',
-          800: '#18181b',
-          700: '#27272a',
+          950: '#050506',
+          900: '#0a0a0c',
+          800: '#131318',
+          700: '#23242b',
         },
         neon: {
-          pink: '#d946ef',  // fuchsia-500, main character energy
-          cyan: '#06b6d4',  // cyan-500, smooth flows
-          green: '#84cc16', // lime-500, goated for success
-          purple: '#8b5cf6', // purple-500, aesthetic
+          pink: '#6872D9',
+          cyan: '#5E6AD2',
+          green: '#65D994',
+          purple: '#7C83E6',
         },
-        // Hazard levels, pick your fighter.
         hazard: {
-          low: '#84cc16',    // green means go, W
-          mid: '#eab308',    // yellow is kinda sus
-          high: '#f97316',   // orange, big yikes
-          crit: '#ef4444',   // red, massive L
+          low: '#65D994',
+          mid: '#E6C662',
+          high: '#F59F52',
+          crit: '#FF5C72',
         }
       },
       fontFamily: {
-        // we ditching the boring fonts for that clean aesthetic. No mid fonts allowed.
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
-        display: ['Space Grotesk', 'sans-serif'],
+        display: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        // glowing drop shadows because regular shadows are mid.
-        'glow-pink': '0 0 20px rgba(217, 70, 239, 0.4)',
-        'glow-cyan': '0 0 20px rgba(6, 182, 212, 0.4)',
-        'glow-green': '0 0 20px rgba(132, 204, 22, 0.4)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-      }
+        'glow-pink': '0 0 0 1px rgba(104,114,217,0.42), 0 8px 30px rgba(94,106,210,0.18)',
+        'glow-cyan': '0 0 0 1px rgba(94,106,210,0.42), 0 8px 30px rgba(94,106,210,0.20)',
+        'glow-green': '0 0 0 1px rgba(101,217,148,0.30), 0 8px 24px rgba(101,217,148,0.14)',
+        'glass': '0 0 0 1px rgba(255,255,255,0.06), 0 2px 20px rgba(0,0,0,0.40), 0 0 40px rgba(0,0,0,0.20)',
+        'glass-hover': '0 0 0 1px rgba(255,255,255,0.10), 0 8px 40px rgba(0,0,0,0.50), 0 0 80px rgba(94,106,210,0.10)',
+        'accent': '0 0 0 1px rgba(94,106,210,0.50), 0 4px 12px rgba(94,106,210,0.30), inset 0 1px 0 0 rgba(255,255,255,0.20)',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translate3d(0,0,0) rotate(0deg)' },
+          '50%': { transform: 'translate3d(0,-20px,0) rotate(1deg)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: '0.72', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.02)' },
+        },
+      },
+      animation: {
+        float: 'float 9s ease-in-out infinite',
+        shimmer: 'shimmer 7s linear infinite',
+        'glow-pulse': 'glow-pulse 2.4s ease-in-out infinite',
+      },
     },
   },
-  // Plugins are empty for now. Lowkey don't need 'em yet.
   plugins: [],
 }

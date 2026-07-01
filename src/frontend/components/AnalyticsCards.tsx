@@ -105,7 +105,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
         y: 0,
         duration: 0.6,
         stagger: 0.08,
-        ease: 'back.out(1.5)',
+        ease: 'expo.out',
       });
     }, containerRef);
 
@@ -115,19 +115,19 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
   return (
     <section ref={containerRef} className="w-full">
       <div className="mb-12">
-        <h2 className="text-4xl font-display font-black text-white mb-3 tracking-tight">
+        <h2 className="text-4xl font-display font-semibold gradient-heading mb-3 tracking-tight">
           Telemetry Data
         </h2>
-        <p className="text-gray-500 text-sm font-medium tracking-wide">
+        <p className="text-foreground-muted text-sm font-medium tracking-wide">
           Computational fluid dynamics (CFD) diagnostics streaming in real-time.
         </p>
       </div>
 
       {/* if no state, we waiting for dat juice */}
       {!state ? (
-        <div className="glass-card p-20 text-center border-dashed border-white/5 bg-white/[0.01]">
+        <div className="glass-card p-20 text-center border-dashed border-border-default bg-white/[0.01]">
           <div className="w-12 h-12 border-4 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-gray-500 font-black uppercase tracking-[0.3em] text-xs">
+          <p className="text-foreground-muted font-mono font-bold uppercase tracking-[0.24em] text-xs">
             Synchronizing Matrix...
           </p>
         </div>
@@ -140,16 +140,16 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
               <div
                 key={metric.label}
                 ref={(el) => { cardsRef.current[index] = el; }}
-                className={`glass-card p-10 border border-white/5 transition-all duration-500 group opacity-0 translate-y-4 hover:bg-white/[0.03] hover:border-white/10 ${metric.border}`}
+                className={`glass-card p-8 border border-border-default transition-all duration-300 group opacity-0 translate-y-4 hover:-translate-y-1 hover:bg-white/[0.03] hover:border-border-hover ${metric.border}`}
               >
                 <div className="flex items-start justify-between mb-10">
-                  <div className="p-4 rounded-2xl bg-void-950 border border-white/5 transition-all group-hover:scale-110">
+                  <div className="p-4 rounded-xl bg-background-base border border-border-default transition-all group-hover:scale-[1.02]">
                     <Icon size={28} className={metric.color} />
                   </div>
                   {/* subtle pulsing dot for dat live energy */}
-                  <div className="flex items-center gap-3 bg-void-950 px-4 py-2 rounded-full border border-white/5">
-                    <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse shadow-[0_0_10px_rgba(132,204,22,0.8)]"></span>
-                    <span className="text-[10px] font-black tracking-[0.2em] text-gray-500 uppercase">Live</span>
+                  <div className="flex items-center gap-3 bg-background-base px-4 py-2 rounded-full border border-border-default">
+                    <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse shadow-[0_0_10px_rgba(101,217,148,0.7)]"></span>
+                    <span className="text-[10px] font-mono font-bold tracking-[0.18em] text-foreground-muted uppercase">Live</span>
                   </div>
                 </div>
 
@@ -158,7 +158,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
                     {metric.label}
                   </p>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-5xl font-display font-black text-white tracking-tighter">
+                    <span className="text-4xl lg:text-5xl font-display font-semibold text-white tracking-normal">
                       {metric.value}
                     </span>
                     {metric.unit && (
@@ -170,7 +170,7 @@ export const AnalyticsCards: React.FC<AnalyticsCardsProps> = ({ state }) => {
                 {/* progress bars for dat extra rizz */}
                 {metric.progress !== undefined && (
                   <div className="mt-10">
-                    <div className="w-full h-1 bg-void-950 rounded-full overflow-hidden border border-white/5">
+                    <div className="w-full h-1 bg-background-base rounded-full overflow-hidden border border-border-default">
                       <div
                         className={`h-full rounded-full transition-all duration-1000 ease-out ${metric.bg}`}
                         style={{ width: `${Math.min(metric.progress, 100)}%` }}

@@ -1,3 +1,3 @@
 "Scenario Name","Rows","Cols","Max Density","Mean Density","Pct Cells > rhoCrit","First Step Above rhoCrit","Mean Velocity","Min Velocity","Total Evacuated Mass","Max Risk","Mean Risk","Pct Cells > Risk Threshold","Time of Peak Risk","Total Overshoot Count","Total Overshoot Magnitude","Max Overshoot Magnitude","Mass Conservation Error","Runtime ms","Num Timesteps","Total Evacuation Time (s)"
-"Festival Bottleneck","100","100","4.1824","0.2826","2.006","9145","0.9958","0.0000","0.0000","0.3394","0.0774","0.000","15000","0","0.000000","0.000000","4328.082702","30191.2","15000","150.000"
-"Stadium Rush","100","100","3.8419","0.1969","0.000","0","1.0000","1.0000","0.0000","0.2765","0.0600","0.000","15000","0","0.000000","0.000000","2417.838626","30585.7","15000","150.000"
+"Festival Bottleneck","100","100","4.1824","0.2826","2.006","9145","0.9958","0.0000","0.0000","0.3394","0.0774","0.000","15000","0","0.000000","0.000000","4328.082702","43293.8","15000","150.000"
+"Stadium Rush","100","100","3.8419","0.1969","0.000","0","1.0000","1.0000","0.0000","0.2765","0.0600","0.000","15000","0","0.000000","0.000000","2417.838626","47059.6","15000","150.000"
