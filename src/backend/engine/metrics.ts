@@ -104,9 +104,14 @@ export function runSimulationWithMetrics(
   let rho = options?.initialDensity ? new Float64Array(options.initialDensity) : new Float64Array(N);
   let rhoPrev = new Float64Array(N);
   const risk = new Float64Array(N);
-  const vx = dir.vx.slice();
-  const vy = dir.vy.slice();
   const distanceToExit = dir.dist.slice();
+  const actualVx = new Float64Array(N);
+  const actualVy = new Float64Array(N);
+  const push = Math.max(0, params.pushFactor);
+  for (let i = 0; i < N; i++) {
+    actualVx[i] = dir.vx[i] * push;
+    actualVy[i] = dir.vy[i] * push;
+  }
 
   const initialDensityState = new Float64Array(rho);
   const peakDensityPerStep: number[] = [];
@@ -142,8 +147,8 @@ export function runSimulationWithMetrics(
       totalOvershootMagnitude: 0,
       maxOvershootMagnitude: 0,
     };
-    stepDensityV3(rho, rhoPrev, vx, vy, cells, params, diagnostics);
-    computeRiskV3(rhoPrev, vx, vy, distanceToExit, cells, risk, params);
+    stepDensityV3(rho, rhoPrev, dir.vx, dir.vy, cells, params, diagnostics, actualVx, actualVy);
+    computeRiskV3(rhoPrev, actualVx, actualVy, distanceToExit, cells, risk, params);
 
     const currentMaxDensity = Math.max(...rhoPrev);
     let activeDensitySum = 0;
@@ -219,7 +224,7 @@ export function runSimulationWithMetrics(
   }
 
   // final vibe check and wrapping it up
-  const finalVelocityMagnitude = velocityMagnitude(vx, vy, cells);
+  const finalVelocityMagnitude = velocityMagnitude(actualVx, actualVy, cells);
   let finalVelocitySum = 0;
   let finalVelocityCount = 0;
   let finalMaxRisk = 0;

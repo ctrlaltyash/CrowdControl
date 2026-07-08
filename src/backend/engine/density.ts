@@ -27,6 +27,8 @@ export function stepDensityV3(
   cells: Uint8Array,
   p: SimParams,
   diagnostics?: DensityStepDiagnostics,
+  actualVx?: Float64Array,
+  actualVy?: Float64Array,
 ): void {
   const {
     rows,
@@ -73,6 +75,8 @@ export function stepDensityV3(
         velocityX[i] = 0;
         velocityY[i] = 0;
         pressure[i] = 0;
+        if (actualVx) actualVx[i] = 0;
+        if (actualVy) actualVy[i] = 0;
         continue;
       }
 
@@ -80,6 +84,8 @@ export function stepDensityV3(
       const mobility = Math.max(0, Math.pow(Math.max(0, 1 - density / rhoMax), beta));
       velocityX[i] = baseVx[i] * mobility * push;
       velocityY[i] = baseVy[i] * mobility * push;
+      if (actualVx) actualVx[i] = velocityX[i];
+      if (actualVy) actualVy[i] = velocityY[i];
 
       const activation = pressureA === 0 ? 0.5 : 1 / (1 + Math.exp(-pressureA * (density - rhoCrit)));
       const scaledDensity = rhoCrit > 0 ? density / rhoCrit : 0;
@@ -242,10 +248,15 @@ export function computeRiskV3(
     riskDelta,
     riskGamma,
     riskEta,
+    epsilon,
+    camaraderieG,
+    camaraderieI,
+    camaraderieM,
   } = p;
 
   const maxDistance = Math.max(1, p.rows + p.cols);
-  const maxSpeed = Math.max(1, p.pushFactor);
+  const maxSpeed = Math.max(1e-6, p.pushFactor);
+  const eps = typeof epsilon === 'number' ? Math.max(1e-12, epsilon) : 1e-3;
 
   for (let i = 0; i < rho.length; i++) {
     const cell = cells[i];
@@ -263,17 +274,41 @@ export function computeRiskV3(
     const speed = Math.hypot(vx[i], vy[i]);
     const d = distanceToExit[i];
 
-    const densityRisk = Math.min(1, r / rhoMax);
-    const congestionRisk = r >= rhoCrit ? Math.min(1, (r - rhoCrit) / Math.max(1, rhoMax - rhoCrit)) : 0;
-    const distanceRisk = d >= 1e8 ? 1 : Math.min(1, Math.max(0, d / maxDistance));
-    const speedRisk = 1 - Math.min(1, speed / maxSpeed);
+    // Term 1: density normalized
+    const densityTerm = riskAlpha * (r / rhoMax);
 
-    const rawRisk = (
-      riskAlpha * densityRisk +
-      riskDelta * distanceRisk +
-      riskGamma * speedRisk +
-      riskEta * congestionRisk
-    ) 
+    // Term 2: proximity to exits / constrictions -> 1 / (d + eps)
+    const distanceTerm = riskDelta * (1 / (d + eps));
+
+    // Term 3: reduced mobility -> 1 / (|v| + eps)
+    const speedTerm = riskGamma * (1 / (speed + eps));
+
+    // Term 4: Psi(ρ) as defined in the paper
+    let psi = 0;
+    if (r >= rhoCrit) {
+      const numer = (r - rhoCrit) / Math.max(1e-9, rhoMax);
+      psi = Math.pow(numer, 2);
+    }
+    const psiTerm = riskEta * psi;
+
+    // Camaraderie / cohesion term c(x,t): use local neighborhood to approximate N_local
+    // c(x,t) = G / N_local * (1 - I) * (1 - rho/rhoMax)^m
+    let nLocal = 0;
+    const cols = p.cols;
+    const rows = p.rows;
+    const rIdx = Math.floor(i / cols);
+    const cIdx = i % cols;
+    for (let rr = Math.max(0, rIdx - 1); rr <= Math.min(rows - 1, rIdx + 1); rr++) {
+      for (let cc = Math.max(0, cIdx - 1); cc <= Math.min(cols - 1, cIdx + 1); cc++) {
+        const ni = rr * cols + cc;
+        if (cells[ni] !== CellType.WALL && cells[ni] !== CellType.MITIGATION) nLocal++;
+      }
+    }
+    if (nLocal <= 0) nLocal = 1;
+    const localFactor = (1 - camaraderieI);
+    const cohesion = camaraderieG / nLocal * localFactor * Math.pow(Math.max(0, 1 - (r / rhoMax)), camaraderieM);
+
+    const rawRisk = densityTerm + distanceTerm + speedTerm + psiTerm - cohesion;
 
     risk[i] = Math.min(1, Math.max(0, Number.isFinite(rawRisk) ? rawRisk : 0));
   }

@@ -19,6 +19,8 @@ export class CrowdSimulator {
   public state: SimulatorState;
   public displayBuffer: Float64Array;
   public preventionMode: boolean = false; // if true, we active on mitigation, bet
+  private directionVx: Float64Array;
+  private directionVy: Float64Array;
   
   private animId: number = 0;
   private onUpdate: SimulatorUpdateCallback | null = null;
@@ -36,14 +38,24 @@ export class CrowdSimulator {
     const resolvedParams = { ...params, rows: resolvedRows, cols: resolvedCols };
     // compute direction field so ppl know where to walk, no cap
     const dir = computeDirectionField(cells, resolvedRows, resolvedCols);
+    this.directionVx = dir.vx;
+    this.directionVy = dir.vy;
     
+    const actualVx = new Float64Array(N);
+    const actualVy = new Float64Array(N);
+    const push = Math.max(0, resolvedParams.pushFactor);
+    for (let i = 0; i < N; i++) {
+      actualVx[i] = dir.vx[i] * push;
+      actualVy[i] = dir.vy[i] * push;
+    }
+
     // initializing the state, bet
     this.state = {
       rho: new Float64Array(N),
       rhoPrev: new Float64Array(N),
       risk: new Float64Array(N),
-      vx: dir.vx,
-      vy: dir.vy,
+      vx: actualVx,
+      vy: actualVy,
       distanceToExit: dir.dist,
       cells: new Uint8Array(cells),
       params: resolvedParams,
@@ -92,7 +104,17 @@ export class CrowdSimulator {
         const current = this.state.rho;
         const next = this.state.rhoPrev;
         // step dat density, lowkey the hardest part
-        stepDensityV3(current, next, this.state.vx, this.state.vy, this.state.cells, this.state.params);
+        stepDensityV3(
+          current,
+          next,
+          this.directionVx,
+          this.directionVy,
+          this.state.cells,
+          this.state.params,
+          undefined,
+          this.state.vx,
+          this.state.vy,
+        );
         this.state.rho = next;
         this.state.rhoPrev = current;
         this.state.stepCount++;
@@ -142,9 +164,15 @@ export class CrowdSimulator {
 
               // recompute paths bc we changed the grid, no cap
               const dir = computeDirectionField(this.state.cells, this.state.rows, this.state.cols);
-              this.state.vx = dir.vx;
-              this.state.vy = dir.vy;
+              this.directionVx = dir.vx;
+              this.directionVy = dir.vy;
               this.state.distanceToExit = dir.dist;
+
+              const push = Math.max(0, this.state.params.pushFactor);
+              for (let i = 0; i < this.state.vx.length; i++) {
+                this.state.vx[i] = this.directionVx[i] * push;
+                this.state.vy[i] = this.directionVy[i] * push;
+              }
             }
           }
         }

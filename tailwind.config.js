@@ -54,7 +54,7 @@ export default {
       fontFamily: {
         sans: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
-        display: ['Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'Inter', 'Geist Sans', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'glow-pink': '0 0 0 1px rgba(104,114,217,0.42), 0 8px 30px rgba(94,106,210,0.18)',

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -384,6 +384,15 @@
   .gradient-accent-text {
     color: transparent;
     background: linear-gradient(90deg, #5e6ad2, #a6adff, #6872d9, #5e6ad2);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmer 7s linear infinite;
+  }
+
+  .gradient-danger-text {
+    color: transparent;
+    background: linear-gradient(90deg, #ff7d8e, #ff5c72, #ff8c70);
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
