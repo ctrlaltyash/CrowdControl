@@ -1,24 +1,25 @@
 /* ─────────────────────────────────────────────────────────────
    Simulator V4 Controller — Analytics & Mitigation Integration
 
-   dis is the main controller, the boss of the simulation.
-   rizzing up all the modules to work together, no cap.
+   Core orchestrator for the simulation engine. Integrates the 
+   direction field solver, density evolution, hazard analytics, 
+   and dynamic mitigation modules into a cohesive lifecycle.
    ───────────────────────────────────────────────────────────── */
 
 import { SimParams, SimulatorState } from './types';
 import { computeDirectionField } from './solver';
 import { stepDensityV3, computeRiskV3 } from './density';
-import { detectHazards } from './analytics';
-import { calculateIntervention } from './mitigation';
+import { detectHazards as detectAnalyticsHazards } from './analytics';
+import { calculateIntervention, detectMitigationHazards, type Intervention } from './mitigation';
 import { createSimParams } from '../../shared/simParams';
 
 export type SimulatorUpdateCallback = (state: SimulatorState) => void;
 
-// the big simulator class, absolute goat
+/** Primary execution controller for crowd dynamics simulation */
 export class CrowdSimulator {
   public state: SimulatorState;
   public displayBuffer: Float64Array;
-  public preventionMode: boolean = false; // if true, we active on mitigation, bet
+  public preventionMode: boolean = false; /** Enables dynamic mitigation interventions */
   private directionVx: Float64Array;
   private directionVy: Float64Array;
   
@@ -36,7 +37,7 @@ export class CrowdSimulator {
     }
 
     const resolvedParams = { ...params, rows: resolvedRows, cols: resolvedCols };
-    // compute direction field so ppl know where to walk, no cap
+    // Compute static potential field and resulting velocity vectors
     const dir = computeDirectionField(cells, resolvedRows, resolvedCols);
     this.directionVx = dir.vx;
     this.directionVy = dir.vy;
@@ -49,7 +50,7 @@ export class CrowdSimulator {
       actualVy[i] = dir.vy[i] * push;
     }
 
-    // initializing the state, bet
+    // Initialize global simulation state container
     this.state = {
       rho: new Float64Array(N),
       rhoPrev: new Float64Array(N),
@@ -69,20 +70,55 @@ export class CrowdSimulator {
     this.displayBuffer = new Float64Array(N);
   }
 
-  // set dem callbacks for the frontend, rizz it up
+  /** Registers external callbacks for state updates and termination events */
   public setCallbacks(onUpdate: SimulatorUpdateCallback, onFinished: () => void) {
     this.onUpdate = onUpdate;
     this.onFinished = onFinished;
   }
 
-  // start the engine, vroom vroom
+  private mergeAlerts(newHazards: SimulatorState['alerts']) {
+    const activeAlerts = this.state.alerts.filter(a => !a.mitigated);
+    const filteredNew = newHazards.filter(nh => {
+      return !activeAlerts.some(ea => {
+        const dr = ea.r - nh.r;
+        const dc = ea.c - nh.c;
+        return dr * dr + dc * dc < 64 && ea.type === nh.type;
+      });
+    });
+    this.state.alerts = [...filteredNew, ...this.state.alerts].slice(0, 15);
+  }
+
+  private applyInterventions(interventions: Intervention[]) {
+    if (interventions.length === 0) return;
+
+    for (const mod of interventions) {
+      const k = mod.r * this.state.cols + mod.c;
+      this.state.cells[k] = mod.type;
+      this.state.rho[k] = 0;
+      this.state.rhoPrev[k] = 0;
+      this.state.risk[k] = 0;
+    }
+
+    const dir = computeDirectionField(this.state.cells, this.state.rows, this.state.cols);
+    this.directionVx = dir.vx;
+    this.directionVy = dir.vy;
+    this.state.distanceToExit = dir.dist;
+
+    const push = Math.max(0, this.state.params.pushFactor);
+    for (let i = 0; i < this.state.vx.length; i++) {
+      this.state.vx[i] = this.directionVx[i] * push;
+      this.state.vy[i] = this.directionVy[i] * push;
+    }
+  }
+
+  /** Initiates the main simulation loop */
   public start() {
     if (this.state.running) return;
     this.state.running = true;
     this.loop();
   }
 
-  // stop it before it explodes, fr
+  /** Halts simulation execution and cancels pending animation frames */
   public stop() {
     this.state.running = false;
     if (this.animId) {
@@ -91,19 +127,19 @@ export class CrowdSimulator {
     }
   }
 
-  // take a step into the chaos
+  /** Advances the simulation state by one full time step */
   public step() {
     try {
-      const STEPS = 8; // substeps for speed, fr fr
+      const STEPS = 8; // Number of fractional time steps for numerical stability
       for (let i = 0; i < STEPS; i++) {
         if (this.state.stepCount >= this.state.params.maxSteps) {
-          this.state.running = false; // we reached the end, bet
+          this.state.running = false; // Terminate if maximum step count is reached
           break;
         }
 
         const current = this.state.rho;
         const next = this.state.rhoPrev;
-        // step dat density, lowkey the hardest part
+        // Evolve density field using upwind advection-diffusion scheme
         stepDensityV3(
           current,
           next,
@@ -120,9 +156,9 @@ export class CrowdSimulator {
         this.state.stepCount++;
 
         // ─── Analytics Pass (Every 20 steps) ───
-        // checkin for hazards bc we don't want no Ls
+        // Evaluate active grid for emergent hazard conditions
         if (this.state.stepCount % 20 === 0) {
-          const newHazards = detectHazards(
+          const newHazards = detectAnalyticsHazards(
             this.state.rho,
             this.state.vx,
             this.state.vy,
@@ -132,53 +168,11 @@ export class CrowdSimulator {
             this.state.stepCount,
           );
 
-          const activeAlerts = this.state.alerts.filter(a => !a.mitigated);
-          // filter out duplicates, don't be spammy
-          const filteredNew = newHazards.filter(nh => {
-            return !activeAlerts.some(ea => {
-              const dr = ea.r - nh.r;
-              const dc = ea.c - nh.c;
-              return dr * dr + dc * dc < 64;
-            });
-          });
-          this.state.alerts = [...filteredNew, ...this.state.alerts].slice(0, 15);
-
-          // if we r in prevention mode, let's fix dem problems
-          if (this.preventionMode) {
-            const unmitigated = this.state.alerts.filter(a => !a.mitigated);
-            const interventions = calculateIntervention(
-              unmitigated,
-              this.state.cells,
-              this.state.vx,
-              this.state.vy,
-              this.state.rows,
-              this.state.cols,
-              this.state.rho,
-              { responsiveness: this.state.params.mitigationResponsiveness },
-            );
-
-            if (interventions.length > 0) {
-              for (const mod of interventions) {
-                this.state.cells[mod.r * this.state.cols + mod.c] = mod.type;
-              }
-
-              // recompute paths bc we changed the grid, no cap
-              const dir = computeDirectionField(this.state.cells, this.state.rows, this.state.cols);
-              this.directionVx = dir.vx;
-              this.directionVy = dir.vy;
-              this.state.distanceToExit = dir.dist;
-
-              const push = Math.max(0, this.state.params.pushFactor);
-              for (let i = 0; i < this.state.vx.length; i++) {
-                this.state.vx[i] = this.directionVx[i] * push;
-                this.state.vy[i] = this.directionVy[i] * push;
-              }
-            }
-          }
+          this.mergeAlerts(newHazards);
         }
       }
 
-      // compute risk for the aesthetic heatmap
+      // Evaluate comprehensive risk functional based on current density and velocity
       computeRiskV3(
         this.state.rho,
         this.state.vx,
@@ -189,17 +183,61 @@ export class CrowdSimulator {
         this.state.params,
       );
 
+      if (this.preventionMode && this.state.stepCount > 0 && this.state.stepCount % 40 === 0) {
+        const mitigationHazards = detectMitigationHazards(
+          this.state.rho,
+          this.state.vx,
+          this.state.vy,
+          this.state.risk,
+          this.state.rows,
+          this.state.cols,
+          this.state.cells,
+          this.state.params,
+          this.state.stepCount,
+          {
+            responsiveness: this.state.params.mitigationResponsiveness,
+            riskThreshold: 0.62,
+          },
+        );
+
+        const interventions = calculateIntervention(
+          mitigationHazards,
+          this.state.cells,
+          this.state.vx,
+          this.state.vy,
+          this.state.rows,
+          this.state.cols,
+          this.state.rho,
+          { responsiveness: this.state.params.mitigationResponsiveness },
+        );
+
+        this.applyInterventions(interventions);
+        this.mergeAlerts(mitigationHazards);
+
+        if (interventions.length > 0) {
+          computeRiskV3(
+            this.state.rho,
+            this.state.vx,
+            this.state.vy,
+            this.state.distanceToExit,
+            this.state.cells,
+            this.state.risk,
+            this.state.params,
+          );
+        }
+      }
+
       if (this.onUpdate) this.onUpdate(this.state);
       return true;
     } catch (err) {
-      console.error('Simulator Error:', err); // oops, something went sus
+      console.error('Simulator Error:', err); // Log execution failure details
       this.stop();
       if (this.onFinished) this.onFinished();
       return false;
     }
   }
 
-  // the loop that keeps it goin, fr fr
+  /** Recursive execution frame driver */
   private loop = () => {
     if (!this.state.running) return;
     const success = this.step();

@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────
    Control Panel Component - Simulation Status & Command Actions
-   Control panel but make it main character energy, no cap.
+   Provides execution controls and live temporal metrics.
    ───────────────────────────────────────────────────────────── */
 
 import { useRef, useEffect } from 'react';
@@ -8,7 +8,7 @@ import { Play, Pause, RotateCcw } from 'lucide-react';
 import { setupButtonRipple, setupMagneticHover } from '../utils/gsapAnimations';
 import gsap from 'gsap';
 
-// props for da hub, staying 100
+// Properties defining the state and callbacks for the control panel.
 interface ControlPanelProps {
   onPlay?: () => void;
   onPause?: () => void;
@@ -29,7 +29,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // entrance animation, real smooth like a DM slide
+  // Initialize GSAP entrance animations for the control panel container.
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!containerRef.current) return;
@@ -43,7 +43,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     return () => ctx.revert();
   }, []);
 
-  // button effects for dat extra rizz
+  // Attach interaction effects (ripple and magnetic hover) to control buttons.
   useEffect(() => {
     const cleanups: Array<() => void> = [];
 
@@ -58,7 +58,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     };
   }, []);
 
-  // formatting time bc we don't want it messy fr
+  // Format the elapsed simulation time in seconds to a MM:SS string representation.
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -72,14 +72,14 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           <p className="text-xs uppercase tracking-[0.35em] text-text-muted">Simulation Status</p>
           <h3 className="mt-2 text-lg font-bold text-text-primary">Command Hub</h3>
         </div>
-        {/* status pill, active or nah? check it */}
+        {/* Status indicator displaying the current operational state of the engine. */}
         <div className={`status-pill ${isRunning ? 'bg-emerald-math/10 border-emerald-math/20 text-emerald-math animate-glow-pulse' : 'bg-white/5 border-white/10 text-text-secondary'}`}>
           <span className="block text-[11px] uppercase tracking-[0.35em]">State</span>
           <strong className="block text-sm">{isRunning ? 'Active' : 'Paused'}</strong>
         </div>
       </div>
 
-      {/* iteration and time stats, strictly data energy */}
+      {/* Simulation step counter and formatted elapsed time metrics. */}
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-3xl border border-white/5 bg-obsdian-950/80 p-4">
           <p className="text-[11px] uppercase tracking-[0.35em] text-text-muted">Iterations</p>
@@ -91,7 +91,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </div>
       </div>
 
-      {/* buttons to play, pause, reset. big button energy */}
+      {/* Primary execution commands: Play, Pause, and Reset. */}
       <div className="grid grid-cols-3 gap-3">
         <button
           ref={(el) => { buttonsRef.current[0] = el; }}

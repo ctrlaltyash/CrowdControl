@@ -3,14 +3,17 @@ import { runSimulationWithMetrics } from '../src/backend/engine/metrics.ts';
 import { createSimParams, DEFAULT_PARAMS } from '../src/shared/simParams.ts';
 import { writeFileSync } from 'fs';
 
+// Initialize the bottleneck scenario as the standard benchmark test case.
 const scenario = buildBottleneckScenario(DEFAULT_PARAMS.rows, DEFAULT_PARAMS.cols);
 
+// Define time-step variations to evaluate numerical stability and density overshoot characteristics.
 const configs = [
   { label: 'default', params: DEFAULT_PARAMS },
   { label: 'dt-0.02', params: createSimParams({ dt: 0.02 }) },
   { label: 'dt-0.01', params: createSimParams({ dt: 0.01 }) },
 ];
 
+// Execute the simulation for each parameter configuration and extract relevant numerical diagnostics.
 const results = configs.map(({ label, params }) => {
   const metrics = runSimulationWithMetrics(params, new Uint8Array(scenario.cells), scenario.rows, scenario.cols, `${scenario.label}-${label}`, {
     riskThreshold: 0.65,

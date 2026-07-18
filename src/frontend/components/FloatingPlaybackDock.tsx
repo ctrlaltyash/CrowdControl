@@ -2,18 +2,33 @@ import React, { useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, ShieldCheck, Activity } from 'lucide-react';
 import { setupButtonRipple, setupMagneticHover } from '../utils/gsapAnimations';
 
+/**
+ * Properties for the FloatingPlaybackDock component, managing simulation playback and display states.
+ */
 interface FloatingPlaybackDockProps {
+  /** Callback to initiate simulation execution. */
   onPlay: () => void;
+  /** Callback to halt simulation execution. */
   onPause: () => void;
+  /** Callback to reset the simulation to its initial state. */
   onReset: () => void;
+  /** Optional callback to advance the simulation by a single discrete time step. */
   onStep?: () => void;
+  /** Indicates if the simulation is currently active. */
   isRunning: boolean;
+  /** Current active visualization layer ('density' for heatmap, 'risk' for hazard overlay). */
   viewMode: 'density' | 'risk';
+  /** Callback to switch the active visualization layer. */
   onViewModeChange: (mode: 'density' | 'risk') => void;
+  /** Indicates if the AI-driven autonomous mitigation system is active. */
   preventionEnabled: boolean;
+  /** Callback to toggle the AI mitigation system. */
   onPreventionChange: (value: boolean) => void;
+  /** Current simulation iteration step count. */
   step: number;
+  /** Target simulation frames per second (tick rate). */
   fps: number;
+  /** Callback to adjust the target simulation tick rate. */
   onFpsChange: (fps: number) => void;
 }
 
@@ -34,7 +49,7 @@ export const FloatingPlaybackDock: React.FC<FloatingPlaybackDockProps> = ({
   const dockRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // magnetic hover effects for premium tactile feedback
+  // Apply magnetic hover physics to interactive elements for enhanced tactile feedback.
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     buttonRefs.current.forEach((button) => {

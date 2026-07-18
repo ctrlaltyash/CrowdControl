@@ -3,7 +3,7 @@ import { computeDirectionField } from './solver';
 import { stepDensityV3, computeRiskV3, type DensityStepDiagnostics } from './density';
 import { createSimParams } from '../../shared/simParams';
 
-// metrics for density, no cap, keepin track of the crowd
+/** Metrics tracking density statistics throughout the simulation. */
 export interface DensityMetrics {
   maxDensity: number;
   meanDensity: number;
@@ -11,7 +11,7 @@ export interface DensityMetrics {
   firstStepAboveCrit: number | null;
 }
 
-// velocity metrics, how fast ppl r zoomin
+/** Metrics tracking velocity and evacuation flow rates. */
 export interface VelocityMetrics {
   meanVelocity: number;
   minVelocity: number;
@@ -19,7 +19,7 @@ export interface VelocityMetrics {
   exitFlowRatePerStep: number[];
 }
 
-// risk metrics, seein if the vibe is too sus
+/** Metrics evaluating safety and hazard risks during the simulation. */
 export interface RiskMetrics {
   maxRisk: number;
   meanRisk: number;
@@ -27,7 +27,7 @@ export interface RiskMetrics {
   timeOfPeakRisk: number;
 }
 
-// numerical metrics, checkin if the math is legit
+/** Metrics tracking numerical stability, conservation errors, and performance. */
 export interface NumericalMetrics {
   massConservationError: number;
   runtimeMs: number;
@@ -36,7 +36,7 @@ export interface NumericalMetrics {
   numTimesteps: number;
 }
 
-// time series metrics for dem charts, fr fr
+/** Time series data tracking key variables at each simulation step. */
 export interface TimeSeriesMetrics {
   peakDensityPerStep: number[];
   meanRiskPerStep: number[];
@@ -44,7 +44,7 @@ export interface TimeSeriesMetrics {
   exitFlowRatePerStep: number[];
 }
 
-// diagnostics for when density goes wild
+/** Diagnostics tracking localized density overshoots beyond physical limits. */
 export interface DensityDiagnostics {
   totalOvershootCount: number;
   totalOvershootMagnitude: number;
@@ -52,7 +52,7 @@ export interface DensityDiagnostics {
   overshootCountPerStep: number[];
 }
 
-// the big package of metrics, the goat
+/** Comprehensive simulation metrics payload. */
 export interface SimulationMetrics {
   scenarioName: string;
   densityMetrics: DensityMetrics;
@@ -67,9 +67,9 @@ export interface SimulationMetrics {
   densityDiagnostics: DensityDiagnostics;
 }
 
-const DEFAULT_HIGH_RISK_THRESHOLD = 0.65; // threshold for major Ls
+const DEFAULT_HIGH_RISK_THRESHOLD = 0.65; // Threshold indicating severe risk conditions
 
-// helper for velocity magnitude, no cap
+/** Computes the scalar magnitude of the velocity field. */
 function velocityMagnitude(vx: Float64Array, vy: Float64Array, mask?: Uint8Array): Float64Array {
   const result = new Float64Array(vx.length);
   for (let i = 0; i < vx.length; i += 1) {
@@ -82,7 +82,7 @@ function velocityMagnitude(vx: Float64Array, vy: Float64Array, mask?: Uint8Array
   return result;
 }
 
-// main runner function, rizzing up the whole simulation
+/** Main entry point for executing a complete, headless simulation run. */
 export function runSimulationWithMetrics(
   paramsInput: Partial<SimParams>,
   cells: Uint8Array,
@@ -100,7 +100,7 @@ export function runSimulationWithMetrics(
   const riskThreshold = options?.riskThreshold ?? DEFAULT_HIGH_RISK_THRESHOLD;
   const dir = computeDirectionField(cells, rows, cols);
 
-  // setup buffers, bet
+  // Initialize simulation state buffers
   let rho = options?.initialDensity ? new Float64Array(options.initialDensity) : new Float64Array(N);
   let rhoPrev = new Float64Array(N);
   const risk = new Float64Array(N);
@@ -140,7 +140,7 @@ export function runSimulationWithMetrics(
     initialMass += initialDensityState[i];
   }
 
-  // loopin thru steps, fr fr
+  // Execute time steps
   for (let step = 1; step <= params.maxSteps; step += 1) {
     const diagnostics: DensityStepDiagnostics = {
       overshootCount: 0,
@@ -156,7 +156,7 @@ export function runSimulationWithMetrics(
     let activeCount = 0;
     let highRiskAreaCount = 0;
 
-    // collectin stats for the vibe check
+    // Accumulate step statistics for active computational cells
     for (let i = 0; i < N; i += 1) {
       if (!isActiveCell(i)) continue;
       activeDensitySum += rhoPrev[i];
@@ -189,7 +189,7 @@ export function runSimulationWithMetrics(
     totalOvershootMagnitude += diagnostics.totalOvershootMagnitude;
     maxOvershootMagnitude = Math.max(maxOvershootMagnitude, diagnostics.maxOvershootMagnitude);
 
-    // checkin mass flow, no cap
+    // Compute mass flux at entry and exit boundaries
     const exitFlow = rhoPrev.reduce((sum, _value, index) => {
       if (cells[index] !== CellType.EXIT) return sum;
       const diff = rho[index] - rhoPrev[index];
@@ -208,12 +208,12 @@ export function runSimulationWithMetrics(
     sumMeanDensity += currentMeanDensity;
     stepCount += 1;
 
-    // swap buffers like a pro
+    // Swap state buffers for the next time step
     const temp = rho;
     rho = rhoPrev;
     rhoPrev = temp;
 
-    // if everyone left, we chillin
+    // Early termination condition: all mass evacuated
     if (options?.stopWhenLowMass) {
       let totalCurrentMass = 0;
       for (let i = 0; i < rho.length; i++) {
@@ -223,7 +223,7 @@ export function runSimulationWithMetrics(
     }
   }
 
-  // final vibe check and wrapping it up
+  // Compute final aggregated statistics and diagnostics
   const finalVelocityMagnitude = velocityMagnitude(actualVx, actualVy, cells);
   let finalVelocitySum = 0;
   let finalVelocityCount = 0;
@@ -266,7 +266,7 @@ export function runSimulationWithMetrics(
     if (isActiveCell(i) && rho[i] > params.rhoCrit) cellsAboveCrit++;
   }
 
-  // pack it up and ship it, bet
+  // Construct and return final metrics payload
   const densityMetrics: DensityMetrics = {
     maxDensity: maxDensityOverTime,
     meanDensity: stepCount > 0 ? sumMeanDensity / stepCount : 0,

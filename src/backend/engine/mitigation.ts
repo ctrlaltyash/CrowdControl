@@ -9,20 +9,26 @@
    3) Choose interventions that steer flow instead of sealing it
    4) Validate the intervention against the local field
 
-   fr dis module is like the traffic police but for crowds, no cap.
-   lowkey makin sure ppl don't get squished into a pancake.
+   This module implements dynamic structural interventions to regulate
+   crowd flow and prevent dangerous high-density crush conditions.
    ---------------------------------------------------------------- */
 
-import { CellType, HazardAlert } from './types';
+import { CellType, HazardAlert, SimParams } from './types';
 
-// intervention type, bet
+/** 
+ * Represents a localized structural intervention within the grid,
+ * designating a cell to act as a flow deflector or metering gate.
+ */
 export type Intervention = {
   r: number;
   c: number;
   type: CellType;
 };
 
-// hazard score metrics, seein how sus it is
+/** 
+ * Encapsulates the kinematic metrics used to evaluate the severity
+ * of a localized flow hazard.
+ */
 export type HazardScore = {
   density: number;
   flux: number;
@@ -33,9 +39,13 @@ export type HazardScore = {
 
 export type MitigationOptions = {
   responsiveness?: number;
+  riskThreshold?: number;
 };
 
-// scored hazard with extra rizz
+/** 
+ * An extended representation of a HazardAlert incorporating continuous
+ * hydrodynamic scalar fields for more granular mitigation decisions.
+ */
 type ScoredHazard = HazardAlert & {
   density?: number;
   flux?: number;
@@ -47,7 +57,10 @@ type ScoredHazard = HazardAlert & {
 const EPS = 1e-9;
 const SAFE_ENTRY_RADIUS = 1;
 
-// tuning for mitigation, fr fr
+/** 
+ * Heuristic tuning parameters governing the aggression, scale, and placement
+ * bounds of the closed-loop intervention system.
+ */
 type MitigationTuning = {
   responsiveness: number;
   safeExitRadius: number;
@@ -60,7 +73,10 @@ type MitigationTuning = {
   allowSideGuide: boolean;
 };
 
-// gettin the vibe for tuning, no cap
+/**
+ * Maps a scalar responsiveness value [0, 2] to discrete structural tuning parameters,
+ * balancing conservative buffering against aggressive flow disruption.
+ */
 function getMitigationTuning(options?: MitigationOptions): MitigationTuning {
   const responsiveness = clamp(options?.responsiveness ?? 1, 0, 2);
   const passiveToAggressive = responsiveness / 2;
@@ -78,32 +94,35 @@ function getMitigationTuning(options?: MitigationOptions): MitigationTuning {
   };
 }
 
-// simple indexer, bet
+// Maps a 2D grid coordinate to a 1D array index
 function idx(r: number, c: number, cols: number): number {
   return r * cols + c;
 }
 
-// clampin values like a boss
+// Clamps a numerical value within the specified [lo, hi] bounds
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
 }
 
-// checkin if path is blocked, sus
+// Evaluates if a given cell acts as an impermeable obstacle
 function isBlocked(cell: CellType): boolean {
   return cell === CellType.WALL || cell === CellType.MITIGATION;
 }
 
-// can we build here? fr
+// Evaluates if an intervention structure can be instantiated on this cell
 function isBuildable(cell: CellType): boolean {
   return cell === CellType.EMPTY;
 }
 
-// distance math, no cap
+// Computes the L2 norm (Euclidean distance) from the origin
 function hypot2(x: number, y: number): number {
   return Math.sqrt(x * x + y * y);
 }
 
-// mean field for that smooth flow, bet
+/**
+ * Computes the spatial average of a vector field over a local neighborhood,
+ * applying a low-pass filter to smooth turbulent local dynamics.
+ */
 function meanFieldAt(
   fieldX: Float64Array,
   fieldY: Float64Array,
@@ -133,7 +152,10 @@ function meanFieldAt(
   return { x: sumX / count, y: sumY / count };
 }
 
-// sampling density like a vibe check
+/**
+ * Computes the average crowd density within a discrete radial neighborhood,
+ * providing a macroscopic scalar measure of local congestion.
+ */
 function sampleDensity(
   rho: Float64Array,
   r: number,
@@ -158,7 +180,10 @@ function sampleDensity(
   return count ? sum / count : 0;
 }
 
-// local flux, checkin the flow rate, fr
+/**
+ * Estimates the local hydrodynamic flux (rho * |v|) within a neighborhood,
+ * representing the instantaneous mass transport rate.
+ */
 function localFlux(
   rho: Float64Array,
   vx: Float64Array,
@@ -186,7 +211,10 @@ function localFlux(
   return count ? sum / count : 0;
 }
 
-// stagnation check, if it's too high, it's mid
+/**
+ * Calculates a localized stagnation penalty. Higher values indicate critical
+ * velocity degradation (jamming transitions).
+ */
 function localStagnation(
   vx: Float64Array,
   vy: Float64Array,
@@ -215,7 +243,10 @@ function localStagnation(
   return 1 / (meanSpeed + 0.05);
 }
 
-// local pressure, squish factor 100
+/**
+ * Computes an approximation of local kinetic pressure based on the spatial
+ * density gradient, scaling non-linearly with surrounding congestion.
+ */
 function localPressure(
   rho: Float64Array,
   r: number,
@@ -233,7 +264,38 @@ function localPressure(
   return center + 0.35 * grad;
 }
 
-// scoring the hazard, total sus factor
+/**
+ * Averages the spatial risk functional over a local neighborhood to filter
+ * noise in the risk assessment algorithm.
+ */
+function localMeanRisk(
+  risk: Float64Array,
+  r: number,
+  c: number,
+  rows: number,
+  cols: number,
+  radius = 1,
+): number {
+  let sum = 0;
+  let count = 0;
+
+  for (let dr = -radius; dr <= radius; dr++) {
+    for (let dc = -radius; dc <= radius; dc++) {
+      const rr = r + dr;
+      const cc = c + dc;
+      if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
+      sum += risk[idx(rr, cc, cols)];
+      count++;
+    }
+  }
+
+  return count ? sum / count : 0;
+}
+
+/**
+ * Evaluates the cumulative severity of a hazard by linearly combining normalized
+ * density, pressure, inverse flux, and stagnation penalties.
+ */
 function scoreHazard(
   rho: Float64Array,
   vx: Float64Array,
@@ -258,7 +320,10 @@ function scoreHazard(
   return { density, flux, pressure, stagnation, score };
 }
 
-// findin where to go, fr fr
+/**
+ * Searches the local neighborhood for the most favorable evacuation vector,
+ * favoring adjacent cells with lower perceived risk and congestion.
+ */
 function findExitDirection(
   cells: Uint8Array,
   rho: Float64Array,
@@ -299,7 +364,10 @@ function findExitDirection(
   return { dx: bestDx / mag, dy: bestDy / mag };
 }
 
-// checkin distance to cell types, bet
+/**
+ * Computes the Chebyshev distance (L-infinity norm) to the nearest cell of a specified
+ * type within a maximum search radius.
+ */
 function nearestCellTypeDistance(
   cells: Uint8Array,
   r: number,
@@ -322,7 +390,10 @@ function nearestCellTypeDistance(
   return best;
 }
 
-// countin blocked neighbors, lowkey helpful
+/**
+ * Counts the number of impermeable cardinal neighbors surrounding a cell,
+ * used to prevent the formation of concave traps or narrow cavities.
+ */
 function countBlockedCardinalNeighbors(
   cells: Uint8Array,
   r: number,
@@ -353,7 +424,10 @@ function countBlockedCardinalNeighbors(
   return blocked;
 }
 
-// don't build a big blob, fr, it's mid
+/**
+ * Validates that placing an intervention structure will not form a 2x2 solid block,
+ * ensuring microscopic flow paths remain permeable.
+ */
 function wouldCreateSolidBlock(
   cells: Uint8Array,
   r: number,
@@ -383,7 +457,10 @@ function wouldCreateSolidBlock(
   return false;
 }
 
-// keepin paths open so ppl don't get stuck, no cap
+/**
+ * Performs a Breadth-First Search (BFS) reachability check to guarantee that
+ * the proposed intervention will not sever topological connectivity between entries and exits.
+ */
 function keepsEntryReachable(
   cells: Uint8Array,
   rows: number,
@@ -430,7 +507,10 @@ function keepsEntryReachable(
   return false;
 }
 
-// can we place it? vibe check passed?
+/**
+ * Evaluates a comprehensive set of topological and geometric constraints to determine
+ * if a cell is a viable candidate for structural mitigation.
+ */
 function canPlaceMitigation(
   cells: Uint8Array,
   r: number,
@@ -452,7 +532,10 @@ function canPlaceMitigation(
   return keepsEntryReachable(cells, rows, cols, pending, totalEntries, k);
 }
 
-// placing a line of deflectors, smooth flow, bet
+/**
+ * Constructs a linear sequence of intervention structures perpendicular to the primary
+ * flow vector to act as a hydrodynamic funnel.
+ */
 function placeDeflectorLine(
   cells: Uint8Array,
   r0: number,
@@ -490,7 +573,10 @@ function placeDeflectorLine(
   return mods;
 }
 
-// placing a gate to slow things down, fr fr
+/**
+ * Instantiates a discrete structural gate designed to throttle upstream flow velocities
+ * and alleviate downstream pressure build-up.
+ */
 function placeMeteringGate(
   cells: Uint8Array,
   r: number,
@@ -523,7 +609,10 @@ function placeMeteringGate(
   return mods;
 }
 
-// checkin if there's stuff nearby, don't overlap, fr
+/**
+ * Enforces a spatial cooldown radius to prevent excessive clustering of intervention
+ * structures in highly turbulent regions.
+ */
 function hasMitigationNearby(
   cells: Uint8Array,
   r: number,
@@ -547,7 +636,8 @@ function hasMitigationNearby(
 
 /**
  * Hazard detection: find cells that are in a bad state *before* full collapse.
- * spotting dem hazards early, no cap.
+ * Identifies leading indicators of structural collapse, including high pressure gradients,
+ * flow stagnation, and critical density thresholds.
  */
 export function detectHazards(
   rho: Float64Array,
@@ -570,6 +660,7 @@ export function detectHazards(
   }
   const meanRho = activeCount ? rhoSum / activeCount : 0;
   const rhoThreshold = Math.max(0.28, meanRho * 1.35);
+  const densityFloor = Math.max(0.12, meanRho * 0.35);
   const fluxThreshold = 0.02;
 
   // Sample every cell; later you can downsample if needed.
@@ -580,11 +671,12 @@ export function detectHazards(
       if (isBlocked(cell)) continue;
 
       const sc = scoreHazard(rho, vx, vy, r, c, rows, cols);
+      if (sc.density < densityFloor) continue;
 
       const isCompression = sc.density >= rhoThreshold;
       const isJammed = sc.flux <= fluxThreshold;
       const isStalled = sc.stagnation > 6.5;
-      const isDangerous = sc.score > 0.95 || (isCompression && isJammed) || (isCompression && isStalled);
+      const isDangerous = (sc.score > 0.95 && isCompression) || (isCompression && isJammed) || (isCompression && isStalled);
 
       if (!isDangerous) continue;
 
@@ -608,6 +700,98 @@ export function detectHazards(
   return hazards.sort((a, b) => b.intensity - a.intensity).slice(0, 12);
 }
 
+export function detectMitigationHazards(
+  rho: Float64Array,
+  vx: Float64Array,
+  vy: Float64Array,
+  risk: Float64Array,
+  rows: number,
+  cols: number,
+  cells: Uint8Array,
+  params: SimParams,
+  step: number,
+  options?: MitigationOptions,
+): HazardAlert[] {
+  const candidates: ScoredHazard[] = [];
+  let densitySum = 0;
+  let densitySqSum = 0;
+  let activeCount = 0;
+
+  for (let i = 0; i < rho.length; i++) {
+    if (isBlocked(cells[i] as CellType)) continue;
+    const density = Math.max(0, rho[i]);
+    densitySum += density;
+    densitySqSum += density * density;
+    activeCount++;
+  }
+
+  const meanDensity = activeCount ? densitySum / activeCount : 0;
+  const variance = activeCount ? Math.max(0, densitySqSum / activeCount - meanDensity * meanDensity) : 0;
+  const stdDensity = Math.sqrt(variance);
+  const densityFloor = Math.max(params.rhoCrit * 0.45, meanDensity + stdDensity * 0.35, params.rhoMax * 0.12);
+  const riskThreshold = options?.riskThreshold ?? 0.62;
+
+  for (let r = 1; r < rows - 1; r++) {
+    for (let c = 1; c < cols - 1; c++) {
+      const k = idx(r, c, cols);
+      const cell = cells[k] as CellType;
+      if (isBlocked(cell)) continue;
+
+      const density = sampleDensity(rho, r, c, rows, cols, 1);
+      if (density < densityFloor) continue;
+
+      const localRisk = localMeanRisk(risk, r, c, rows, cols, 1);
+      const pressure = localPressure(rho, r, c, rows, cols);
+      const flux = localFlux(rho, vx, vy, r, c, rows, cols, 1);
+      const stagnation = localStagnation(vx, vy, r, c, rows, cols, 1);
+      const densityScore = clamp(density / Math.max(params.rhoMax, EPS), 0, 1);
+      const pressureScore = clamp(pressure / Math.max(params.rhoMax, EPS), 0, 1);
+      const stagnationScore = clamp(stagnation / 8, 0, 1);
+      const severity = clamp(
+        localRisk * 0.48 +
+        densityScore * 0.34 +
+        pressureScore * 0.12 +
+        stagnationScore * 0.06,
+        0,
+        1,
+      );
+
+      const isRisky = localRisk >= riskThreshold;
+      const isDense = density >= params.rhoCrit || densityScore >= 0.36;
+      if (!isRisky && !isDense) continue;
+      if (severity < 0.42) continue;
+
+      candidates.push({
+        id: `mitigation-${r}-${c}-${step}`,
+        r,
+        c,
+        intensity: severity,
+        timestamp: step,
+        type: stagnationScore > 0.55 ? 'STAGNANCY' : 'CRUSH_RISK',
+        mitigated: false,
+        density,
+        flux,
+        pressure,
+        stagnation,
+        severity,
+      });
+    }
+  }
+
+  const selected: ScoredHazard[] = [];
+  for (const candidate of candidates.sort((a, b) => b.intensity - a.intensity)) {
+    if (selected.some(existing => {
+      const dr = existing.r - candidate.r;
+      const dc = existing.c - candidate.c;
+      return dr * dr + dc * dc < 36;
+    })) continue;
+    selected.push(candidate);
+    if (selected.length >= 12) break;
+  }
+
+  return selected;
+}
+
 /**
  * Choose interventions for each hazard.
  *
@@ -616,8 +800,8 @@ export function detectHazards(
  * - Aim downstream of a hazard to create a bypass/funnel
  * - Use small guide rails rather than solid square blobs
  * - If a local hotspot has no direction, apply metering around entry
- * 
- * choosin the right play for each hazard, goat logic.
+ * Selects an optimal intervention geometry based on the local macroscopic velocity field
+ * and the calculated severity of the localized hazard.
  */
 export function calculateIntervention(
   hazards: HazardAlert[],
@@ -693,16 +877,29 @@ export function calculateIntervention(
     const density = clamp(scored.density ?? (rho ? sampleDensity(rho, hazard.r, hazard.c, rows, cols, 1) : 0), 0, 2);
     const aggression = clamp(tuning.aggressionBase + severity * tuning.aggressionScale, 0.15, 1);
 
+    const exitDistance = nearestCellTypeDistance(
+      cells,
+      hazard.r,
+      hazard.c,
+      rows,
+      cols,
+      CellType.EXIT,
+      tuning.safeExitRadius + 6,
+    );
+    const upstreamOffset = exitDistance <= tuning.safeExitRadius + 1 ? tuning.safeExitRadius + 3 : 0;
+    const anchorR = Math.round(hazard.r - dirY * upstreamOffset);
+    const anchorC = Math.round(hazard.c - dirX * upstreamOffset);
+
     // Meter upstream first. Exit-driven hazards happen near the door,
     // but barriers should sit before the crush zone, not on the exit mouth.
-    const upstreamMeter = placeMeteringGate(cells, hazard.r, hazard.c, rows, cols, -dirX, -dirY);
+    const upstreamMeter = placeMeteringGate(cells, anchorR, anchorC, rows, cols, -dirX, -dirY);
     for (const m of upstreamMeter) addMod(m, beforeCount);
 
     if (modifications.length === beforeCount) {
       const upstreamGuide = placeDeflectorLine(
         cells,
-        hazard.r,
-        hazard.c,
+        anchorR,
+        anchorC,
         -dirX,
         -dirY,
         rows,
@@ -714,7 +911,7 @@ export function calculateIntervention(
     }
 
     if (tuning.allowSideGuide && modifications.length === beforeCount && density > 0.7) {
-      const sideGuide = placeDeflectorLine(cells, hazard.r, hazard.c, -dirY, dirX, rows, cols, 2, 0);
+      const sideGuide = placeDeflectorLine(cells, anchorR, anchorC, -dirY, dirX, rows, cols, 2, 0);
       for (const m of sideGuide) addMod(m, beforeCount);
     }
 
@@ -727,7 +924,7 @@ export function calculateIntervention(
 /**
  * Apply modifications to the cell grid.
  * Useful if your simulation expects a direct mutation step.
- * applyin dem mods to the grid, bet.
+ * Mutates the internal state of the simulation grid to instantiate calculated interventions.
  */
 export function applyInterventions(
   cells: Uint8Array,
@@ -747,7 +944,8 @@ export function applyInterventions(
 /**
  * Closed-loop mitigation step.
  * Call this once per simulation tick.
- * the big step, rizzing up the simulation.
+ * Executes a single iteration of the closed-loop control system, detecting hazards
+ * and deploying structural mitigations dynamically.
  */
 export function mitigationStep(
   rho: Float64Array,
@@ -766,7 +964,7 @@ export function mitigationStep(
 
 /**
  * Optional utility: clear old mitigation cells if your system needs reset.
- * clear the board, peace out.
+ * Resets the simulation state by clearing all active intervention structures.
  */
 export function clearMitigation(cells: Uint8Array, rows: number, cols: number): void {
   for (let i = 0; i < rows * cols; i++) {

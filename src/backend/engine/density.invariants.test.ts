@@ -1,4 +1,4 @@
-// testing invariants bc we don't want no buggy code, no cap
+// Property-based invariant tests for density evolution.
 import assert from 'assert';
 import { describe, it } from 'node:test';
 import { createSimParams, DEFAULT_PARAMS } from '../../shared/simParams.ts';
@@ -6,33 +6,33 @@ import { stepDensityV3 } from './density.ts';
 import { computeDirectionField } from './solver.ts';
 import { CellType, type SimParams } from './types.ts';
 
-// grid size for testing, keeps it manageable fr
+// Standardized grid dimensions for the test suite.
 const INVARIANT_GRID = Object.freeze({
   rows: 12,
   cols: 14,
 });
 
-// how many steps we taking? a lot.
+// Number of iterations for various test scenarios.
 const MASS_CONSERVATION_STEPS = 48;
 const BOUNDS_STEPS = 80;
 const DETERMINISM_STEPS = 64;
 
-// tolerances bc floats be trippin
+// Allowed numerical tolerances for floating-point comparisons.
 const MASS_RELATIVE_TOLERANCE = 1e-10;
 const DENSITY_BOUND_TOLERANCE = 1e-12;
 const DETERMINISM_TOLERANCE = 0;
 
-// density setup vibes
+// Configuration for generating initial density states.
 const INITIAL_DENSITY_BASE_FRACTION = 0.08;
 const INITIAL_DENSITY_VARIATION_FRACTION = 0.05;
 const DENSITY_PATTERN_PERIOD = 11;
 
-// making empty cells, clean slate energy
+// Initializes a grid representing empty cells.
 function createEmptyCells(rows: number, cols: number): Uint8Array {
   return new Uint8Array(rows * cols);
 }
 
-// flow cells got dat entry and exit rizz
+// Initializes a grid containing defined entry and exit cells.
 function createFlowCells(rows: number, cols: number): Uint8Array {
   const cells = createEmptyCells(rows, cols);
   const midRow = Math.floor(rows / 2);
@@ -41,7 +41,7 @@ function createFlowCells(rows: number, cols: number): Uint8Array {
   return cells;
 }
 
-// filling it up with density juice
+// Populates the density array based on a procedural pattern.
 function createControlledDensity(rows: number, cols: number, rhoMax: number): Float64Array {
   const rho = new Float64Array(rows * cols);
   const baseDensity = rhoMax * INITIAL_DENSITY_BASE_FRACTION;
@@ -57,14 +57,14 @@ function createControlledDensity(rows: number, cols: number, rhoMax: number): Fl
   return rho;
 }
 
-// adding it all up, counting da mass
+// Calculates the total mass (sum of density) within the grid.
 function sumDensity(rho: Float64Array): number {
   let total = 0;
   for (const value of rho) total += value;
   return total;
 }
 
-// taking a hike thru many steps
+// Executes the simulation step function over a specified number of iterations.
 function stepMany(
   initialDensity: Float64Array,
   cells: Uint8Array,
@@ -89,7 +89,7 @@ function stepMany(
   return curr;
 }
 
-// checking if density is acting sus (out of bounds)
+// Validates that density values remain finite and within expected bounds.
 function assertDensityBounds(rho: Float64Array, params: SimParams, step: number): void {
   for (let i = 0; i < rho.length; i += 1) {
     const value = rho[i];
@@ -105,7 +105,7 @@ function assertDensityBounds(rho: Float64Array, params: SimParams, step: number)
   }
 }
 
-// comparing two fields, they gotta be twins
+// Validates that two floating-point arrays match within a given tolerance.
 function assertFieldsClose(actual: Float64Array, expected: Float64Array, tolerance: number): void {
   assert.equal(actual.length, expected.length);
 
@@ -118,9 +118,9 @@ function assertFieldsClose(actual: Float64Array, expected: Float64Array, toleran
   }
 }
 
-// main test block for density stepping
+// Test suite to verify the invariants of the density stepping algorithm.
 describe('density stepping invariants', () => {
-  // mass conservation test, keep dat matter consistent
+  // Verifies global mass conservation in an isolated system.
   it('approximately conserves mass without entries, exits, mitigation, or active flow sources', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -155,7 +155,7 @@ describe('density stepping invariants', () => {
     );
   });
 
-  // checking if density stays in its lane
+  // Verifies that numerical values respect theoretical limits.
   it('keeps density finite, non-negative, and bounded by rhoMax', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -171,7 +171,7 @@ describe('density stepping invariants', () => {
     });
   });
 
-  // relaxing spikes bc high pressure is mid
+  // Verifies that the pressure term diffuses localized density anomalies.
   it('spreads isolated pressure spikes instead of reinforcing them', () => {
     const params = createSimParams({
       rows: 9,
@@ -213,7 +213,7 @@ describe('density stepping invariants', () => {
     );
   });
 
-  // checking if overshoot reporting works fr
+  // Verifies the correctness of the diagnostic tracking system.
   it('accepts a diagnostics object and reports overshoot stats during density stepping', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,
@@ -245,7 +245,7 @@ describe('density stepping invariants', () => {
     assert.equal(diagnostics.maxOvershootMagnitude, 0);
   });
 
-  // making sure it's the same every time, no RNG nonsense
+  // Verifies that given identical inputs, the engine produces deterministic results.
   it('is deterministic for identical params, cells, and initial density', () => {
     const params = createSimParams({
       rows: INVARIANT_GRID.rows,

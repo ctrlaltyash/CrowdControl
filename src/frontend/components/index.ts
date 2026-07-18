@@ -1,16 +1,16 @@
 /* ─────────────────────────────────────────────────────────────
-   Component Exports - The main squad assembled.
+   Component Exports - Centralized module for UI components.
    ───────────────────────────────────────────────────────────── */
 
-// Shipping all the goods so we can use 'em elsewhere. No cap.
+// Exporting core application components to facilitate module resolution.
 
-export { Header } from './Header'; // The top bar, lowkey important.
-export { Sidebar } from './Sidebar'; // All the controls, big brain energy.
-export { Hero } from './Hero'; // The landing page GOAT.
-export { FormulaShowcase } from './FormulaShowcase'; // Math but make it fashion.
-export { AnalyticsCards } from './AnalyticsCards'; // Stats or it didn't happen.
-export { AlertsPanel } from './AlertsPanel'; // Watch out, sus stuff happening.
-export { SimulationCanvas } from './SimulationCanvas'; // The main stage, fr.
-export { ControlPanel } from './ControlPanel'; // Dial it in.
-export { FloatingPlaybackDock } from './FloatingPlaybackDock'; // Play, pause, vibing.
-
+export { Header } from './Header'; // Fixed top navigation bar.
+export { Sidebar } from './Sidebar'; // Primary configuration and control panel.
+export { Hero } from './Hero'; // Landing page hero section.
+export { FormulaShowcase } from './FormulaShowcase'; // Presentation layer for mathematical models.
+export { AnalyticsCards } from './AnalyticsCards'; // Real-time statistical metrics dashboard.
+export { AlertsPanel } from './AlertsPanel'; // Active hazard and risk notification center.
+export { SimulationCanvas } from './SimulationCanvas'; // Live heatmap and flow visualization canvas.
+export { ControlPanel } from './ControlPanel'; // Simulation execution controls.
+export { LiveTelemetryCharts, type LiveTelemetryPoint } from './LiveTelemetryCharts';
+export { FloatingPlaybackDock } from './FloatingPlaybackDock'; // Bottom toolbar for quick playback actions.

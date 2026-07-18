@@ -1,11 +1,11 @@
-// testing if risk is bussin or mid, no cap
+// Unit tests for the computeRiskV3 algorithm.
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { computeRiskV3 } from './density.ts';
 import { CellType, type SimParams } from './types.ts';
 import { createSimParams } from '../../shared/simParams.ts';
 
-// making all dem arrays we need, big prep energy
+// Helper function to initialize appropriately sized arrays for test scenarios.
 function createArrays(size: number) {
   const rho = new Float64Array(size);
   const vx = new Float64Array(size);
@@ -16,9 +16,9 @@ function createArrays(size: number) {
   return { rho, vx, vy, distance, cells, risk };
 }
 
-// testing computeRiskV3 vibes
+// Test suite for the computeRiskV3 risk calculation function.
 describe('computeRiskV3', () => {
-  // walls and mitigation shouldn't have risk, they just vibing
+  // Verifies that wall and mitigation cells correctly evaluate to zero risk.
   it('produces zero risk for empty or wall/mitigation cells', () => {
     const params: SimParams = createSimParams({ rows: 5, cols: 5 });
     const { rho, vx, vy, distance, cells, risk } = createArrays(25);
@@ -35,7 +35,7 @@ describe('computeRiskV3', () => {
     }
   });
 
-  // if u far away, risk goes up. facts.
+  // Verifies that risk is monotonically increasing with distance for fixed inputs.
   it('makes risk increase with distance when density and speed are fixed', () => {
     const params: SimParams = createSimParams({ rows: 10, cols: 10 });
     const { rho, vx, vy, distance, cells, risk } = createArrays(25);
@@ -55,7 +55,7 @@ describe('computeRiskV3', () => {
     assert(risk[1] <= risk[2], `Expected risk[1] <= risk[2], got ${risk[1]} > ${risk[2]}`);
   });
 
-  // if u slow, risk is high. don't be lagging.
+  // Verifies that risk is inversely proportional to velocity magnitude.
   it('makes risk increase as speed decreases for fixed density and distance', () => {
     const params: SimParams = createSimParams({ rows: 10, cols: 10, pushFactor: 2.0 });
     const { rho, vx, vy, distance, cells, risk } = createArrays(25);
@@ -74,7 +74,7 @@ describe('computeRiskV3', () => {
     assert(risk[1] <= risk[2], `Expected risk[1] <= risk[2], got ${risk[1]} > ${risk[2]}`);
   });
 
-  // unreachable cells are super sus, high risk fr
+  // Verifies that cells flagged with the maximum distance sentinel receive high risk scores.
   it('produces higher risk for unreachable cells via distance sentinel', () => {
     const params: SimParams = createSimParams({ rows: 10, cols: 10 });
     const { rho, vx, vy, distance, cells, risk } = createArrays(25);

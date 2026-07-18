@@ -19,6 +19,11 @@ const SCRATCH_BUFFERS = new WeakMap<Float64Array, {
   scratch2: Float64Array;
 }>();
 
+/**
+ * Advances the density field by one time step integrating advection, diffusion, 
+ * and nonlinear pressure components, based on a finite volume upwind scheme.
+ * Implements sub-stepping for numerical stability.
+ */
 export function stepDensityV3(
   curr: Float64Array,
   next: Float64Array,
@@ -94,6 +99,7 @@ export function stepDensityV3(
   };
 
   const performStep = (source: Float64Array, dest: Float64Array, localDt: number) => {
+    // Re-evaluate velocity and pressure fields based on current density
     computePressureAndVelocity(source);
     dest.fill(0);
 
@@ -139,6 +145,7 @@ export function stepDensityV3(
         }
       }
 
+      // Calculate net advection flux using upwind differencing
       const advection = -(FxEast - FxWest + FySouth - FyNorth);
 
       let neighborSum = 0, neighborCount = 0;
@@ -152,6 +159,7 @@ export function stepDensityV3(
         }
         neighborCount++;
       }
+      // Compute linear isotropic diffusion contribution
       const diffusion = D * (neighborSum - neighborCount * density);
 
       let PxEast = 0, PxWest = 0, PySouth = 0, PyNorth = 0;
@@ -184,7 +192,10 @@ export function stepDensityV3(
         }
       }
 
+      // Calculate net compression flux driven by the pressure gradient
       const compression = -(PxEast - PxWest + PySouth - PyNorth);
+      
+      // Update local density integrating all fluxes over the time step
       let updated = density + localDt * (advection + diffusion + compression);
 
       if (cell === CellType.EXIT) {
@@ -208,11 +219,13 @@ export function stepDensityV3(
     return;
   }
 
+  // Apply sub-stepping to maintain the Courant-Friedrichs-Lewy (CFL) condition
   const stableDt = Math.min(effectiveDt, 0.01);
   const substeps = Math.max(1, Math.ceil(effectiveDt / stableDt));
   const stepDt = effectiveDt / substeps;
   let source = curr;
 
+  // Execute fractional time steps
   for (let step = 0; step < substeps; step++) {
     const isLast = step === substeps - 1;
     const target = isLast ? next : (step % 2 === 0 ? scratch1 : scratch2);
@@ -224,6 +237,7 @@ export function stepDensityV3(
   for (let i = 0; i < N; i++) if (cells[i] === CellType.ENTRY) entryCount++;
   const perEntryFlow = entryCount > 0 ? (entryRate * dt) / entryCount : 0;
 
+  // Inject crowd density at entry zones, ensuring maximal capacity is respected
   for (let i = 0; i < N; i++) {
     if (cells[i] === CellType.ENTRY) {
       const cap = Math.max(0, rhoMax * 1.15 - next[i]);
@@ -232,6 +246,13 @@ export function stepDensityV3(
   }
 }
 
+
+
+/**
+ * Evaluates the multi-factor risk functional defined in Section 2.5.
+ * Integrates local density, distance to exit, speed reduction, physical pressure (Psi),
+ * and dynamic camaraderie/cohesion to generate a composite scalar risk field.
+ */
 export function computeRiskV3(
   rho: Float64Array,
   vx: Float64Array,
@@ -254,8 +275,6 @@ export function computeRiskV3(
     camaraderieM,
   } = p;
 
-  const maxDistance = Math.max(1, p.rows + p.cols);
-  const maxSpeed = Math.max(1e-6, p.pushFactor);
   const eps = typeof epsilon === 'number' ? Math.max(1e-12, epsilon) : 1e-3;
 
   for (let i = 0; i < rho.length; i++) {

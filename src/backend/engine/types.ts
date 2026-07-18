@@ -2,14 +2,16 @@
    StampedePredictor — Type Definitions (Simplified Model)
    ───────────────────────────────────────────────────────────── */
 
-// yo dis enum defines wat each block is
-// dont mix em up or it'll be a whole mess
+/**
+ * Defines the physical properties of cells within the simulation grid.
+ * Ensure proper cell assignments to maintain simulation integrity.
+ */
 export enum CellType {
-  EMPTY  = 0, // just air lol
-  WALL   = 1, // u cant go here... rip
-  EXIT   = 2, // the way out... finally
-  ENTRY  = 3, // where everyone pulls up
-  MITIGATION = 4, // ai fixin things
+  EMPTY  = 0, /** Navigable free space */
+  WALL   = 1, /** Impassable obstacle boundary */
+  EXIT   = 2, /** Destination cell (sink for density) */
+  ENTRY  = 3, /** Source cell (generates density) */
+  MITIGATION = 4, /** Dynamically placed obstacle for flow control */
 }
 
 /** Simulation parameters — V3 Research Model (Yashvardhan 2026) */
@@ -56,37 +58,58 @@ export interface SimParams {
   minSpeedFactor: number;
 }
 
-/** Simulation status */
-// wat is the sim doin rn?
+/** Represents the current operational state of the simulation engine */
 export type SimStatus = 'idle' | 'initializing' | 'running' | 'finished' | 'stopped';
 
-/** Hazard types for analytics */
-// when things go south
+/** 
+ * Represents an identified critical condition within the crowd dynamics, 
+ * requiring monitoring or intervention.
+ */
 export interface HazardAlert {
-  id: string; // unique tag
-  r: number; // row loc
-  c: number; // col loc
-  intensity: number; // how bad is it?
-  timestamp: number; // when it happened
-  type: 'CRUSH_RISK' | 'STAGNANCY' | 'TURBULENCE'; // the bad stuff
-  mitigated: boolean; // did we fix it tho?
+  /** Unique identifier for the alert instance */
+  id: string; 
+  /** Row coordinate of the hazard centroid */
+  r: number; 
+  /** Column coordinate of the hazard centroid */
+  c: number; 
+  /** Severity metric based on local risk evaluation */
+  intensity: number; 
+  /** Simulation step when the hazard was detected */
+  timestamp: number; 
+  /** Classification of the observed instability */
+  type: 'CRUSH_RISK' | 'STAGNANCY' | 'TURBULENCE'; 
+  /** Indicates whether active mitigation successfully reduced risk below threshold */
+  mitigated: boolean; 
 }
 
 /** V2: Simulator State Container */
-// the whole world state... big brain energy
+/** Encapsulates the entire domain state, including scalar and vector fields for density, risk, and velocity */
 export interface SimulatorState {
-  rho: Float64Array; // density map
-  rhoPrev: Float64Array; // last frame
-  risk: Float64Array; // risk map... scary
-  vx: Float64Array; // velocity x
-  vy: Float64Array; // velocity y
-  distanceToExit: Float64Array; // how far to the door
-  cells: Uint8Array; // the map layout
-  params: SimParams; // current settings
-  stepCount: number; // how many ticks
-  running: boolean; // is it zoomin?
-  rows: number; // rows again
-  cols: number; // cols again
+  /** Current density field mapping (rho) */
+  rho: Float64Array; 
+  /** Density field from the previous time step */
+  rhoPrev: Float64Array; 
+  /** Scalar field representing computed multi-factor risk */
+  risk: Float64Array; 
+  /** Horizontal velocity component field */
+  vx: Float64Array; 
+  /** Vertical velocity component field */
+  vy: Float64Array; 
+  /** Shortest path distance field to the nearest exit */
+  distanceToExit: Float64Array; 
+  /** Grid defining cell physical properties (walls, exits, etc.) */
+  cells: Uint8Array; 
+  /** Active simulation parameters */
+  params: SimParams; 
+  /** Cumulative number of simulation iterations executed */
+  stepCount: number; 
+  /** Indicates if the simulation engine is currently advancing time steps */
+  running: boolean; 
+  /** Number of grid rows */
+  rows: number; 
+  /** Number of grid columns */
+  cols: number; 
   /** V4: Analytics & Mitigation */
-  alerts: HazardAlert[]; // all the current issues
+  /** Active analytical alerts indicating localized instabilities */
+  alerts: HazardAlert[]; 
 }

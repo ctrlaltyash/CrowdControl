@@ -4,17 +4,23 @@
    a smooth, physically consistent travel direction field.
    ───────────────────────────────────────────────────────────── */
 
-// lowkey importing cell types bc we need dat logic
 import { CellType } from './types';
 
-// dis interface is a whole vibe fr
+/**
+ * Encapsulates the computed potential field gradients and shortest-path distances.
+ * Represents the fundamental navigation field guiding crowd entities.
+ */
 export interface DirectionField {
   vx: Float64Array;
   vy: Float64Array;
   dist: Float64Array;
 }
 
-// main function to compute da field, no cap
+/**
+ * Computes a smooth, physically consistent travel direction field by solving
+ * Laplace's equation for harmonic potential over the grid. 
+ * Also computes the shortest path distance to the nearest exit using BFS traversal.
+ */
 export function computeDirectionField(
   cells: Uint8Array,
   rows: number,
@@ -24,12 +30,12 @@ export function computeDirectionField(
   const idx = (r: number, c: number) => r * cols + c;
   const phi = new Float64Array(N);
 
-  // initializing phi, exit is zero, others are one. trust the process
+  // Initialize potential field phi: exits act as sinks (0), other regions as 1
   for (let i = 0; i < N; i++) {
     phi[i] = cells[i] === CellType.EXIT ? 0 : 1;
   }
 
-  // grinding thru 1200 iters max, we stay on dat grind
+  // Solve Laplace's equation using Jacobi iteration scheme
   const maxIters = 1200;
   for (let iter = 0; iter < maxIters; iter++) {
     let maxDelta = 0;
@@ -37,7 +43,7 @@ export function computeDirectionField(
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const i = idx(r, c);
-        // if it's an exit or wall, it's mid, we skip
+        // Skip boundary conditions (walls, active mitigation, and exits)
         if (cells[i] === CellType.EXIT || cells[i] === CellType.WALL || cells[i] === CellType.MITIGATION) {
           continue;
         }
@@ -45,7 +51,7 @@ export function computeDirectionField(
         let sum = 0;
         let count = 0;
 
-        // checking neighbors, they lowkey sus
+        // Apply 4-point stencil for the discrete Laplacian
         const neighbors = [
           [r - 1, c],
           [r + 1, c],
@@ -55,11 +61,11 @@ export function computeDirectionField(
 
         for (const [nr, nc] of neighbors) {
           if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
-            sum += phi[i];
+            sum += phi[i]; // Neumann boundary condition at domain edges
           } else {
             const ni = idx(nr, nc);
             if (cells[ni] === CellType.WALL || cells[ni] === CellType.MITIGATION) {
-              sum += phi[i];
+              sum += phi[i]; // Neumann boundary condition at internal obstacles
             } else {
               sum += phi[ni];
             }
@@ -67,14 +73,14 @@ export function computeDirectionField(
           count += 1;
         }
 
-        // averaging stuff out, keepin it chill
+        // Compute local average and evaluate residual for convergence
         const nextPhi = sum / count;
         maxDelta = Math.max(maxDelta, Math.abs(nextPhi - phi[i]));
         phi[i] = nextPhi;
       }
     }
 
-    // if delta is smol, we out. facts.
+    // Terminate iteration early if convergence criteria are met
     if (maxDelta < 1e-8) {
       break;
     }
@@ -83,7 +89,7 @@ export function computeDirectionField(
   const vx = new Float64Array(N);
   const vy = new Float64Array(N);
 
-  // time to calculate gradients, real rizz energy here
+  // Derive normalized gradient field to establish travel directions
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const i = idx(r, c);
@@ -107,7 +113,7 @@ export function computeDirectionField(
         ? phi[down]
         : phi[i];
 
-      // math goes brrr
+      // Compute central differences to extract local gradient vectors
       const gx = -(phiRight - phiLeft) * 0.5;
       const gy = -(phiDown - phiUp) * 0.5;
       const length = Math.hypot(gx, gy);
@@ -118,7 +124,7 @@ export function computeDirectionField(
     }
   }
 
-  // setting up distance field, BFS is da goat
+  // Compute shortest path distance field via BFS traversal
   const dist = new Float64Array(N).fill(1e9);
   const queue: number[] = [];
   for (let i = 0; i < N; i++) {
@@ -132,7 +138,7 @@ export function computeDirectionField(
   const dr = [-1, 1, 0, 0];
   const dc = [0, 0, -1, 1];
 
-  // running BFS like a boss
+  // Iterative BFS expansion from exit nodes
   while (head < queue.length) {
     const cur = queue[head++];
     const cr = Math.floor(cur / cols);
@@ -151,6 +157,5 @@ export function computeDirectionField(
     }
   }
 
-  // returning everything, we ate dat
   return { vx, vy, dist };
 }

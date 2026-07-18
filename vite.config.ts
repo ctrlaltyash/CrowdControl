@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// lowkey dis is where the magic happens fr fr
-// no cap vite is the goat for bundling dis mess
+// Vite configuration file for the CrowdControl frontend.
+// Handles bundling and development server setup.
 // https://vite.dev/config/
 export default defineConfig({
-  // we usin react bc we basic like dat
+  // Enable React support for JSX and Fast Refresh.
   plugins: [react()],
 })

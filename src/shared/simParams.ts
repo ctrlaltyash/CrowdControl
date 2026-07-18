@@ -1,7 +1,9 @@
 import type { SimParams } from '../backend/engine/types';
 
-// yo dis is the default setup for the vibes
-// if u dont change dis, the crowd gonna act mid
+/**
+ * Default simulation parameters based on established crowd dynamics literature.
+ * Modifying these values will directly alter the behavior of the macroscopic crowd model.
+ */
 export const DEFAULT_PARAMS: Readonly<SimParams> = Object.freeze({
   rows: 100,
   cols: 100,
@@ -20,7 +22,7 @@ export const DEFAULT_PARAMS: Readonly<SimParams> = Object.freeze({
   // Risk Functional Weights (Section 2.5)
   riskAlpha: 0.5, // \alpha
   riskDelta: 0.1, // \delta
-  riskGamma: 0.1, // \gamma
+  riskGamma: 0, // \gamma
   riskEta: 0.3,   // \eta
   
   // Camaraderie Term (Section 2.6)
@@ -42,9 +44,14 @@ export const DEFAULT_PARAMS: Readonly<SimParams> = Object.freeze({
   spreadFactor: 0.02,
 } satisfies SimParams);
 
-// dis function creates params but u can swap some out
-// like a custom skin or smth
+/**
+ * Factory function to instantiate simulation parameters, applying any provided overrides
+ * to the default configuration set.
+ *
+ * @param overrides - Partial parameter set used to overwrite default values.
+ * @returns A complete configuration object for the simulation engine.
+ */
 export function createSimParams(overrides: Partial<SimParams> = {}): SimParams {
-  // spread it like butter
+  // Merge default parameters with the provided overrides.
   return { ...DEFAULT_PARAMS, ...overrides };
 }

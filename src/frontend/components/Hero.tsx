@@ -1,166 +1,140 @@
-import { useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles, Terminal } from 'lucide-react';
-import gsap from 'gsap';
-import heroImage from '../assets/hero.png';
+/* ─────────────────────────────────────────────────────────────
+   Hero Section Component - Landing Area with Premium Aesthetics
+   ───────────────────────────────────────────────────────────── */
 
+import { useEffect, useRef } from 'react';
+import { ArrowRight } from 'lucide-react';
+import gsap from 'gsap';
+
+/**
+ * Properties for the Hero component.
+ */
 interface HeroProps {
+  /** Callback triggered when the 'Launch Simulation' call-to-action is activated. */
   onGetStarted?: () => void;
-  onExploreModel?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onGetStarted, onExploreModel }) => {
+export const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
-  const ctaContainerRef = useRef<HTMLDivElement>(null);
-  const visualRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const timeline = gsap.timeline();
+    // Animate hero elements on mount
+    const timeline = gsap.timeline();
 
-      timeline.fromTo(
-        containerRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.8 }
+    // Fade in container
+    timeline.fromTo(
+      containerRef.current,
+      { opacity: 0 },
+      { opacity: 1, duration: 0.8 }
+    );
+
+    // Animate title reveal
+    if (titleRef.current) {
+      gsap.fromTo(
+        titleRef.current,
+        { opacity: 0, y: 32 },
+        { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out' }
       );
+    }
 
-      // Slide up the title with some swagger. Total rizz.
-      if (titleRef.current) {
-        timeline.fromTo(
-          titleRef.current,
-          { opacity: 0, y: 32 },
-          { opacity: 1, y: 0, duration: 0.9, ease: 'expo.out' }
-        );
-      }
+    // Animate subtitle
+    if (subtitleRef.current) {
+      gsap.fromTo(
+        subtitleRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, delay: 0.5, ease: 'power3.out' }
+      );
+    }
 
-      if (subtitleRef.current) {
-        timeline.fromTo(
-          subtitleRef.current,
-          { opacity: 0, y: 18 },
-          { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out' },
-          '-=0.62'
-        );
-      }
-
-      if (ctaContainerRef.current) {
-        timeline.fromTo(
-          ctaContainerRef.current,
-          { opacity: 0, scale: 0.95 },
-          { opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out' },
-          '-=0.36'
-        );
-      }
-
-      if (visualRef.current) {
-        timeline.fromTo(
-          visualRef.current,
-          { opacity: 0, y: 24, scale: 0.96 },
-          { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: 'expo.out' },
-          '-=0.5'
-        );
-      }
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  useEffect(() => {
-    const hero = containerRef.current;
-    if (!hero || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const updateParallax = () => {
-      const progress = Math.min(window.scrollY / Math.max(hero.offsetHeight * 0.52, 1), 1);
-      gsap.set(hero, {
-        opacity: 1 - progress * 0.34,
-        scale: 1 - progress * 0.035,
-        y: progress * 64,
-      });
-    };
-
-    updateParallax();
-    window.addEventListener('scroll', updateParallax, { passive: true });
-    return () => window.removeEventListener('scroll', updateParallax);
+    // Animate CTA button
+    if (ctaRef.current) {
+      gsap.fromTo(
+        ctaRef.current,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.6, delay: 0.7, ease: 'back.out' }
+      );
+    }
   }, []);
 
   return (
     <section
       ref={containerRef}
-      className="relative w-full min-h-screen overflow-hidden pt-32 pb-20"
+      className="relative w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-obsdian-950 via-obsdian-900 to-obsdian-950 overflow-hidden pt-16"
     >
-      <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
-        <div className="mb-5">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.34em] text-accent-bright bg-accent/10 px-5 py-2 rounded-full border border-border-accent shadow-[0_0_40px_rgba(94,106,210,0.12)]">
-            Predictive Safety Engine
-          </span>
-        </div>
+      {/* Background Elements */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-indigo-electric/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-cyber/10 rounded-full blur-3xl"></div>
+      </div>
 
+      {/* Content */}
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Title */}
         <h1
           ref={titleRef}
-          className="text-5xl sm:text-6xl lg:text-8xl font-display font-semibold mb-8 gradient-heading leading-none"
+          className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight"
         >
-          CrowdSim
+          <span className="text-gradient-indigo">Crowd Safety</span>
+          <span className="block text-text-primary">Redefined</span>
         </h1>
 
+        {/* Subtitle */}
         <p
           ref={subtitleRef}
-          className="text-base sm:text-lg lg:text-xl text-foreground-muted max-w-3xl mx-auto mb-12 font-normal leading-relaxed"
+          className="text-lg sm:text-xl text-text-secondary max-w-2xl mx-auto mb-8 leading-relaxed"
         >
-          High-fidelity fluid dynamics for real-time crowd safety telemetry. 
-          <span className="gradient-accent-text font-semibold"> Predict pressure, expose risk, and test mitigations </span>
-          before bottlenecks become critical.
+          Advanced fluid dynamics simulation with real-time risk assessment and
+          AI-powered mitigation strategies for safer crowd management.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4" ref={ctaContainerRef}>
+        {/* Features Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-12 text-sm">
+          <div className="bg-indigo-electric/10 border border-indigo-electric/30 rounded-lg p-3">
+            <p className="font-semibold text-indigo-electric mb-1">Mathematical</p>
+            <p className="text-text-muted">Physics-based simulation</p>
+          </div>
+          <div className="bg-cyan-cyber/10 border border-cyan-cyber/30 rounded-lg p-3">
+            <p className="font-semibold text-cyan-cyber mb-1">Real-time</p>
+            <p className="text-text-muted">Live analytics & alerts</p>
+          </div>
+          <div className="bg-emerald-math/10 border border-emerald-math/30 rounded-lg p-3">
+            <p className="font-semibold text-emerald-math mb-1">Intelligent</p>
+            <p className="text-text-muted">AI-driven prevention</p>
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
+            ref={ctaRef}
             onClick={onGetStarted}
-            className="btn-neon-cyan text-base px-8 py-4 min-w-[220px]"
+            className="btn-primary flex items-center justify-center gap-2 text-lg px-8 py-4 group relative overflow-hidden"
           >
-            <Sparkles size={20} />
-            Open Dashboard
-            <ArrowRight size={18} />
+            <span>Launch Simulation</span>
+            <ArrowRight
+              size={20}
+              className="group-hover:translate-x-2 transition-transform"
+            />
           </button>
-          
-          <button
-            className="btn-ghost text-base px-8 py-4 min-w-[220px]"
-            onClick={onExploreModel}
-          >
-            <Terminal size={20} />
-            Review Model
+          <button className="btn-secondary flex items-center justify-center px-8 py-4 text-lg">
+            View Documentation
           </button>
         </div>
 
-        <div
-          ref={visualRef}
-          className="pointer-events-none relative mx-auto mt-16 w-full max-w-4xl"
-          aria-hidden="true"
-        >
-          <div className="absolute inset-x-10 top-20 h-28 rounded-full bg-accent/20 blur-[95px]" />
-          <div className="relative mx-auto flex h-52 w-52 items-center justify-center sm:h-64 sm:w-64">
-            <img
-              src={heroImage}
-              alt=""
-              className="h-full w-full object-contain drop-shadow-[0_24px_70px_rgba(94,106,210,0.26)]"
-            />
-          </div>
-          <div className="mx-auto -mt-8 grid max-w-3xl grid-cols-3 gap-3 text-left">
-            {[
-              ['Density', 'Fluid heatmap'],
-              ['Risk', 'Pressure index'],
-              ['Defense', 'AI barriers'],
-            ].map(([label, value]) => (
-              <div key={label} className="glass-card px-4 py-3">
-                <p className="text-[10px] uppercase tracking-widest text-foreground-muted font-mono">{label}</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
-              </div>
-            ))}
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-xs text-text-muted uppercase tracking-widest">
+              Scroll to explore
+            </span>
+            <div className="w-6 h-10 border border-indigo-glow/40 rounded-full flex items-center justify-center">
+              <div className="w-1 h-2 bg-indigo-glow rounded-full animate-pulse"></div>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-foreground-muted text-[10px] font-mono font-bold tracking-[0.32em] uppercase flex flex-col items-center gap-4 opacity-70">
-        <span>System Ready</span>
-        <div className="w-px h-12 bg-gradient-to-b from-accent to-transparent rounded-full" />
       </div>
     </section>
   );

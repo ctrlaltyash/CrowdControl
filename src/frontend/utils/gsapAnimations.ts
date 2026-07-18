@@ -4,6 +4,11 @@
 
 import gsap from 'gsap';
 
+/**
+ * Executes the initial page load animation sequence.
+ * Fades in the background gradient and triggers a staggered reveal of the target elements.
+ * @param targets The DOM elements to animate into view.
+ */
 export const animatePageLoad = (targets: HTMLElement[]) => {
   const timeline = gsap.timeline();
 
@@ -27,7 +32,10 @@ export const animatePageLoad = (targets: HTMLElement[]) => {
 
   return timeline;
 };
-
+/**
+ * Binds scale and drop-shadow animations to a card element for hover state transitions.
+ * @param card The target HTML element.
+ */
 export const setupCardHoverAnimation = (card: HTMLElement) => {
   card.addEventListener('mouseenter', () => {
     gsap.to(card, {
@@ -49,7 +57,13 @@ export const setupCardHoverAnimation = (card: HTMLElement) => {
     });
   });
 };
-
+/**
+ * Implements a magnetic cursor-tracking effect that translates the element
+ * based on the cursor's relative position within its bounding box.
+ * @param element The DOM element to attach the magnetic effect to.
+ * @param strength The maximum translation distance in pixels.
+ * @returns A cleanup function to remove event listeners.
+ */
 export const setupMagneticHover = (element: HTMLElement, strength = 18) => {
   const handleMove = (event: MouseEvent) => {
     const rect = element.getBoundingClientRect();
@@ -83,7 +97,11 @@ export const setupMagneticHover = (element: HTMLElement, strength = 18) => {
     element.removeEventListener('mouseleave', handleLeave);
   };
 };
-
+/**
+ * Initializes a click-triggered ripple animation effect on the given button element.
+ * Calculates the cursor's local coordinates to originate the radial expansion.
+ * @param button The interactive button element.
+ */
 export const setupButtonRipple = (button: HTMLElement) => {
   button.addEventListener('click', (e: MouseEvent) => {
     const rect = button.getBoundingClientRect();

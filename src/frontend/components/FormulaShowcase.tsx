@@ -1,17 +1,27 @@
-// The math that makes the magic happen. Big brain energy only.
-// If you don't know calculus, just smile and nod.
+/* ─────────────────────────────────────────────────────────────
+   Formula Showcase Component - Mathematical Beauty Display
+   ───────────────────────────────────────────────────────────── */
+
 import { useEffect, useRef } from 'react';
 import { InlineMath, BlockMath } from 'react-katex';
 import gsap from 'gsap';
 import { FORMULAS } from '../utils/mockData';
 import 'katex/dist/katex.min.css';
 
-export const FormulaShowcase: React.FC = () => {
+interface FormulaShowcaseProps {
+  title?: string;
+  subtitle?: string;
+}
+
+export const FormulaShowcase: React.FC<FormulaShowcaseProps> = ({
+  title = 'Mathematical Framework',
+  subtitle = 'Core equations powering our simulation engine',
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Pop in the container
   useEffect(() => {
+    // Animate container on mount
     gsap.fromTo(
       containerRef.current,
       { opacity: 0, y: 40 },
@@ -19,90 +29,126 @@ export const FormulaShowcase: React.FC = () => {
     );
   }, []);
 
-  // Stagger the cards so they cascade in
   useEffect(() => {
+    // Stagger cards animation
     gsap.to(cardsRef.current, {
       opacity: 1,
       y: 0,
       duration: 0.6,
       stagger: 0.1,
-      ease: 'expo.out',
+      ease: 'back.out',
+    });
+  }, []);
+
+  useEffect(() => {
+    // Setup basic hover state for each card
+    cardsRef.current.forEach((card) => {
+      if (card) {
+        card.addEventListener('mouseenter', () => card.classList.add('hovered'));
+        card.addEventListener('mouseleave', () => card.classList.remove('hovered'));
+      }
     });
   }, []);
 
   return (
-    <section ref={containerRef} className="w-full">
+    <section
+      ref={containerRef}
+      className="w-full bg-gradient-to-b from-obsdian-900 to-obsdian-950 py-16 px-4 sm:px-6 lg:px-8"
+    >
       <div className="max-w-7xl mx-auto">
-        
-        <div className="mb-16 text-center">
-          <h2 className="text-4xl sm:text-5xl font-display font-semibold mb-6 gradient-heading tracking-tight">
-            The <span className="gradient-accent-text">Core</span> Calculus
+        {/* Header */}
+        <div className="mb-12 text-center animate-fadeInDown">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gradient-indigo">
+            {title}
           </h2>
-          <p className="text-foreground-muted max-w-2xl mx-auto text-lg font-normal leading-relaxed">
-            Predictive analytics powered by high-fidelity fluid dynamics and nonlinear transport models.
-          </p>
+          <p className="text-text-secondary max-w-2xl mx-auto">{subtitle}</p>
         </div>
 
-        {/* CSS Grid is clutch for responsive layouts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {/* Formula Cards Grid - Responsive Flex Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FORMULAS.map((formula, index) => (
             <div
               key={formula.id}
               ref={(el) => { cardsRef.current[index] = el; }}
-              className="glass-card p-8 h-full flex flex-col group opacity-0 translate-y-6 hover:-translate-y-1 transition-all duration-300"
+              className="card-premium p-6 h-full flex flex-col cursor-pointer group overflow-hidden"
             >
-              {/* Top badge to show what category of math we're flexing */}
-              <div className="mb-8">
+              {/* Category Badge */}
+              <div className="flex items-center gap-2 mb-4">
                 <span
-                  className={`px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.25em] border ${
+                  className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
                     formula.category === 'fluid-dynamics'
-                      ? 'bg-neon-cyan/10 text-neon-cyan border-neon-cyan/20'
+                      ? 'bg-indigo-electric/20 text-indigo-electric'
                       : formula.category === 'risk-assessment'
-                      ? 'bg-hazard-crit/10 text-hazard-crit border-hazard-crit/20'
+                      ? 'bg-red-500/20 text-red-400'
                       : formula.category === 'mitigation'
-                      ? 'bg-neon-pink/10 text-neon-pink border-neon-pink/20'
-                      : 'bg-neon-green/10 text-neon-green border-neon-green/20'
+                      ? 'bg-emerald-math/20 text-emerald-math'
+                      : 'bg-cyan-cyber/20 text-cyan-cyber'
                   }`}
                 >
                   {formula.category.replace('-', ' ')}
                 </span>
               </div>
 
-              <h3 className="text-2xl font-display font-semibold text-white mb-6 group-hover:text-accent-bright transition-colors tracking-tight">
+              {/* Title */}
+              <h3 className="text-lg font-semibold text-text-primary mb-4 group-hover:text-indigo-glow transition-colors">
                 {formula.title}
               </h3>
 
-              {/* The actual math flex. KaTeX renders it beautifully. */}
-              <div className="bg-background-deep rounded-2xl p-6 mb-8 overflow-x-auto border border-border-default shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] flex-grow flex items-center justify-center min-h-[140px]">
-                <div className="text-white text-xl">
+              {/* Formula Display */}
+              <div className="bg-obsdian-900/50 rounded-lg p-4 mb-4 overflow-x-auto border border-indigo-glow/10 flex-grow">
+                <div className="text-center min-w-max">
                   <BlockMath>{formula.latex}</BlockMath>
                 </div>
               </div>
 
-              <p className="text-sm text-foreground-muted mb-8 font-medium leading-relaxed">
-                {formula.description}
-              </p>
+              {/* Main Description */}
+              <p className="text-sm text-text-secondary mb-4">{formula.description}</p>
 
-              {/* Variable legend */}
-              <div className="mt-auto bg-background-base/60 p-5 rounded-2xl border border-border-default">
-                <p className="text-[9px] uppercase tracking-[0.24em] text-foreground-muted mb-4 font-mono font-bold">Nomenclature</p>
+              {/* Variables (Hidden, Shown on Hover) */}
+              <div
+                data-explanation
+                className="opacity-0 translate-y-2 transition-all bg-indigo-electric/10 rounded-lg p-3 border border-indigo-glow/20 text-xs space-y-2"
+              >
+                <p className="font-semibold text-indigo-glow mb-2">Variables:</p>
                 {formula.variables && formula.variables.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-1">
                     {formula.variables.map((variable, idx) => (
-                      <div key={idx} className="flex items-center gap-4 text-xs">
-                        <span className="text-accent-bright font-black bg-background-base px-3 py-1 rounded-lg border border-border-default min-w-[40px] text-center">
+                      <div key={idx} className="flex items-start gap-2">
+                        <span className="text-indigo-glow font-semibold min-w-fit">
                           <InlineMath>{variable.symbol}</InlineMath>
                         </span>
-                        <span className="text-foreground-muted font-medium">{variable.meaning}</span>
+                        <span className="text-text-secondary">{variable.meaning}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-foreground-muted text-xs italic">{formula.explanation}</p>
+                  <p className="text-text-muted italic">{formula.explanation}</p>
                 )}
+              </div>
+
+              {/* Explanation (Always visible) */}
+              <div className="mt-4 p-3 bg-emerald-math/5 rounded-lg border border-emerald-math/20">
+                <p className="text-xs text-text-secondary italic">
+                  {formula.explanation}
+                </p>
+              </div>
+
+              {/* Hover Indicator */}
+              <div className="mt-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-xs text-indigo-glow font-semibold tracking-wider">
+                  HOVER FOR DETAILS ↑
+                </span>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center">
+          <p className="text-text-muted text-sm">
+            These equations form the mathematical foundation of our crowd dynamics
+            simulation and safety analytics platform.
+          </p>
         </div>
       </div>
     </section>

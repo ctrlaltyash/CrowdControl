@@ -5,8 +5,8 @@ import { buildBottleneckScenario, buildStadiumScenario, ScenarioResult } from '.
 import { runSimulationWithMetrics, SimulationMetrics } from '../src/backend/engine/metrics.ts';
 import { DEFAULT_PARAMS } from '../src/shared/simParams.ts';
 
-// dis script is how we get those juicy results
-// no cap it's gonna generate some fire charts
+// Orchestrates the execution of baseline scenarios to generate analytical reports
+// and data visualizations representing the core simulation metrics.
 const RESULTS_DIR = path.join(process.cwd(), 'results');
 const FIGURES_DIR = path.join(RESULTS_DIR, 'figures');
 
@@ -18,7 +18,7 @@ const scenarios: ScenarioResult[] = [
 type Rgb = [number, number, number];
 type RgbStop = readonly [number, number, number];
 
-// color vibes for density
+// Color gradient mapping for density visualization
 const densityStops = [
   [5, 15, 35],
   [0, 120, 190],
@@ -27,7 +27,7 @@ const densityStops = [
   [220, 40, 40],
 ] as const;
 
-// risk colors... watch out fr
+// Color gradient mapping for risk level visualization
 const riskStops = [
   [60, 70, 110],
   [0, 150, 230],
@@ -40,7 +40,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-// samplin the colors like a beat
+// Interpolates between RGB color stops based on a normalized value [0, 1]
 function sampleStops(stops: readonly RgbStop[], t: number): Rgb {
   const n = stops.length - 1;
   const scaled = clamp(t, 0, 1) * n;
@@ -77,7 +77,7 @@ async function ensureOutputDirectories() {
   await mkdir(FIGURES_DIR, { recursive: true });
 }
 
-// drawin the heatmap... lookin aesthetic
+// Renders a generic 2D heatmap on a canvas with a provided color scale and title
 function drawHeatmap(
   grid: Float64Array,
   rows: number,
@@ -120,7 +120,7 @@ function drawHeatmap(
   return canvas;
 }
 
-// line chart for the stonks... i mean density
+// Renders a time-series line chart for tracking scalar metrics over time
 function drawLineChart(
   values: number[],
   width: number,
@@ -217,7 +217,7 @@ async function saveMarkdownTable(rows: string[][], filePath: string) {
   await writeFile(filePath, md);
 }
 
-// render the whole scenario... stay focused
+// Executes a single scenario, captures metrics, and outputs all corresponding figures
 async function renderScenario(scenario: ScenarioResult) {
   const scenarioKey = sanitizeFilename(scenario.label);
   const metrics = runSimulationWithMetrics(DEFAULT_PARAMS, new Uint8Array(scenario.cells), scenario.rows, scenario.cols, scenario.label, {
@@ -266,7 +266,7 @@ function formatNumber(value: number, digits = 3) {
   return value.toFixed(digits);
 }
 
-// main run function... let's get it
+// Main execution entry point. Iterates over scenarios, processes outputs, and finalizes reports.
 async function run() {
   await ensureOutputDirectories();
 

@@ -4,10 +4,10 @@ import './index.css'
 import './dashboard-theme.css'
 import App from './App'
 
-// yo dis is where it all begins fr fr
-// we grabbin the root element and rizzing it up with react
+// Initialize the React application and attach it to the root DOM node.
+// Uses createRoot for React 18 concurrent features.
 createRoot(document.getElementById('root')!).render(
-  // strict mode is like that one strict teacher but for code
+  // Enforce StrictMode to highlight potential problems in the application during development.
   <StrictMode>
     <App />
   </StrictMode>,

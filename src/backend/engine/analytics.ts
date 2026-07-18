@@ -6,13 +6,18 @@
 
 import { HazardAlert, SimParams } from './types';
 
+/** Clamps a numerical value between a minimum and maximum bound. */
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-const NEIGHBOR_RADIUS = 2;
-const MIN_SPEED_THRESHOLD = 0.12;
+const NEIGHBOR_RADIUS = 2; // Analysis window radius for local density and velocity averaging
+const MIN_SPEED_THRESHOLD = 0.12; // Minimum speed threshold for stagnancy detection
 
+/**
+ * Scans the simulation grid to detect potential hazards such as crush risks and stagnancy.
+ * Evaluates local density, speed, and pressure gradients within a defined neighborhood.
+ */
 export function detectHazards(
   rho: Float64Array,
   vx: Float64Array,
@@ -27,6 +32,7 @@ export function detectHazards(
   const baselineDensity = Math.max(params.rhoCrit * 0.6, params.rhoMax * 0.25);
   const motionThreshold = Math.max(MIN_SPEED_THRESHOLD, params.minSpeedFactor * 0.5);
 
+  // Iterate over the grid, excluding borders by the neighborhood radius
   for (let r = NEIGHBOR_RADIUS; r < rows - NEIGHBOR_RADIUS; r += 1) {
     for (let c = NEIGHBOR_RADIUS; c < cols - NEIGHBOR_RADIUS; c += 1) {
       const centerIndex = idx(r, c);
@@ -38,6 +44,7 @@ export function detectHazards(
       let gradientSum = 0;
       let sampleCount = 0;
 
+      // Compute aggregate statistics over the local neighborhood
       for (let dr = -NEIGHBOR_RADIUS; dr <= NEIGHBOR_RADIUS; dr++) {
         for (let dc = -NEIGHBOR_RADIUS; dc <= NEIGHBOR_RADIUS; dc++) {
           const rr = r + dr;
@@ -59,6 +66,7 @@ export function detectHazards(
       const avgSpeed = speedSum / sampleCount;
       const avgGradient = gradientSum / sampleCount;
 
+      // Compute hazard scores based on multi-factor analysis
       const densityScore = clamp(avgDensity / params.rhoMax, 0, 1);
       const compressionScore = clamp((avgDensity - params.rhoCrit) / Math.max(1, params.rhoMax - params.rhoCrit), 0, 1);
       const velocityPenalty = clamp(1 - avgSpeed / Math.max(0.001, motionThreshold), 0, 1);
@@ -73,6 +81,7 @@ export function detectHazards(
         1,
       );
 
+      // Determine specific hazard conditions
       const isDense = avgDensity >= baselineDensity;
       const isCompressed = avgDensity >= params.rhoCrit || compressionScore > 0.25;
       const isSlow = avgSpeed <= motionThreshold * 1.5;
@@ -93,6 +102,7 @@ export function detectHazards(
     }
   }
 
+  // Return top prioritized alerts based on calculated intensity
   return alerts
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, 10);
