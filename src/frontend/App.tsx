@@ -16,6 +16,7 @@ import {
   SimulationCanvas,
   type LiveTelemetryPoint,
 } from './components';
+import { SimulationEventCache, SimulationLatestValueCache } from './utils/simulationEventCache';
 
 const DEFAULT_PARAMS: SimParams = {
   rows: 100,
@@ -44,7 +45,7 @@ const DEFAULT_PARAMS: SimParams = {
   camaraderieG: 0.4,
   camaraderieI: 0.6,
   riskWeight: 1.0,
-  mitigationResponsiveness: 1.0,
+  mitigationResponsiveness: 1000.0,
 };
 
 type DrawTool = 'wall' | 'entry' | 'exit' | 'erase';
@@ -65,6 +66,12 @@ const SCENARIO_LABELS: Record<ScenarioId, string> = {
 
 const CUSTOM_CASE_LABEL = 'Custom Layout';
 const HIGH_RISK_THRESHOLD = 0.65;
+
+interface SimulationUiSnapshot {
+  step: number;
+  elapsed: number;
+  alerts: HazardAlert[];
+}
 
 function getCaseLabel(layoutCase: LayoutCase): string {
   return layoutCase === 'custom' ? CUSTOM_CASE_LABEL : SCENARIO_LABELS[layoutCase];
@@ -118,6 +125,13 @@ export default function App() {
   const bgCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const simulatorRef = useRef<CrowdSimulator | null>(null);
   const latestSimStateRef = useRef<SimulatorState | null>(null);
+  const telemetryCacheRef = useRef(new SimulationEventCache<LiveTelemetryPoint>({
+    maxEvents: 2400,
+    flushIntervalMs: 100,
+  }));
+  const uiSnapshotCacheRef = useRef(new SimulationLatestValueCache<SimulationUiSnapshot>({
+    flushIntervalMs: 100,
+  }));
   const startTimeRef = useRef<number>(0);
   const editableCellsRef = useRef<Uint8Array | null>(null);
   const [status, setStatus] = useState<SimStatus>('idle');
@@ -442,22 +456,50 @@ export default function App() {
     }
   }, [drawSimulationState, viewMode]);
 
+  const flushSimulationCache = useCallback((force = false, now = performance.now()) => {
+    const shouldFlushTelemetry = force || telemetryCacheRef.current.shouldFlush(now);
+    const shouldFlushSnapshot = force || uiSnapshotCacheRef.current.shouldFlush(now);
+
+    if (shouldFlushTelemetry) {
+      const batch = telemetryCacheRef.current.flush(now);
+      if (batch.length > 0) {
+        setTelemetryPoints((points) => [...points, ...batch]);
+      }
+    }
+
+    if (shouldFlushSnapshot) {
+      const snapshot = uiSnapshotCacheRef.current.flush(now);
+      if (snapshot) {
+        setStep(snapshot.step);
+        setAlerts(snapshot.alerts);
+        setElapsed(snapshot.elapsed);
+      }
+    }
+  }, []);
+
   const handleSimUpdate = useCallback((state: SimulatorState) => {
     if (!drawSimulationState(state)) return;
 
     latestSimStateRef.current = state;
     const { stepCount, alerts } = state;
-    const nextElapsed = Math.round((performance.now() - startTimeRef.current) / 100) / 10;
-    setStep(stepCount);
-    setAlerts([...alerts]);
-    setElapsed(nextElapsed);
-    setTelemetryPoints((points) => [...points, buildTelemetryPoint(state, nextElapsed)]);
-  }, [drawSimulationState]);
+    const now = performance.now();
+    const nextElapsed = Math.round((now - startTimeRef.current) / 100) / 10;
+
+    telemetryCacheRef.current.append(buildTelemetryPoint(state, nextElapsed));
+    uiSnapshotCacheRef.current.set({
+      step: stepCount,
+      alerts: [...alerts],
+      elapsed: nextElapsed,
+    });
+    flushSimulationCache(false, now);
+  }, [drawSimulationState, flushSimulationCache]);
 
   const handleStart = async () => {
     if (status === 'running') return;
     setStatus('initializing');
     setTelemetryCaseLabel(getCaseLabel(layoutCase));
+    telemetryCacheRef.current.reset();
+    uiSnapshotCacheRef.current.reset();
     setTelemetryPoints([]);
     latestSimStateRef.current = null;
     const params = {
@@ -473,9 +515,15 @@ export default function App() {
     const simCells = new Uint8Array(editableCells);
     const sim = new CrowdSimulator(params, simCells, params.rows, params.cols);
     sim.preventionMode = preventionEnabled;
-    sim.setCallbacks(handleSimUpdate, () => setStatus('finished'));
+    sim.setCallbacks(handleSimUpdate, () => {
+      flushSimulationCache(true);
+      setStatus('finished');
+    });
     simulatorRef.current = sim;
     prepareBackground(simCells, params.rows, params.cols);
+    telemetryCacheRef.current.append(buildTelemetryPoint(sim.state, 0));
+    uiSnapshotCacheRef.current.set({ step: 0, alerts: [], elapsed: 0 });
+    flushSimulationCache(true);
     setStatus('running');
     startTimeRef.current = performance.now();
     sim.start();
@@ -483,6 +531,7 @@ export default function App() {
 
   const handleStop = () => {
     simulatorRef.current?.stop();
+    flushSimulationCache(true);
     setStatus('stopped');
   };
 
@@ -490,6 +539,8 @@ export default function App() {
     simulatorRef.current?.stop();
     simulatorRef.current = null;
     latestSimStateRef.current = null;
+    telemetryCacheRef.current.reset();
+    uiSnapshotCacheRef.current.reset();
     setStatus('idle');
     setStep(0);
     setElapsed(0);
@@ -552,11 +603,11 @@ export default function App() {
             <div className="flex flex-col gap-4 rounded-[22px] border border-cyan-cyber/10 bg-white/[0.03] px-5 py-4 shadow-glow-lg backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="mb-2 text-[11px] uppercase tracking-[0.32em] text-text-muted">
-                  Live command center
+                  Fixing Crowd Safety in Real-Time
                 </p>
-                <h2 className="text-2xl font-bold text-gradient-indigo leading-tight lg:text-3xl">
-                  CrowdSim Live Simulation
-                </h2>
+                <h1 className="text-2xl font-bold text-gradient-indigo leading-tight lg:text-3xl">
+                  CrowdControl 
+                </h1>
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
@@ -573,8 +624,7 @@ export default function App() {
 
             <div className="flex flex-col gap-3 border border-white/10 bg-obsdian-950/70 p-3 shadow-glow-lg sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-text-muted">Visualization Layer</p>
-                <p className="mt-1 text-sm text-text-secondary">Switch the live canvas between density and risk fields.</p>
+               <p className="text-[11px] uppercase tracking-[0.40em] text-text-muted">Visualization Mode</p> 
               </div>
               <div className="grid grid-cols-2 gap-2 bg-black/20 p-1">
                 <button
@@ -624,33 +674,33 @@ export default function App() {
                   </div>
                   <div className="space-y-4">
                     <div className="metric-row">
-                      <span>Iteration</span>
+                      <span>Iteration:</span>
                       <strong>{step}</strong>
                     </div>
                     <div className="metric-row">
-                      <span>Elapsed</span>
+                      <span>Elapsed:</span>
                       <strong>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</strong>
                     </div>
                     <div className="metric-row">
-                      <span>Active Alerts</span>
+                      <span>Active Alerts:</span>
                       <strong>{alerts.length}</strong>
                     </div>
                   </div>
                 </div>
 
                 <div className="glass-card p-5">
-                  <p className="text-sm uppercase tracking-[0.3em] text-text-muted mb-4">Command Console</p>
+                  <p className="text-sm uppercase tracking-[0.3em] text-text-muted mb-4">Extra Information</p>
                   <div className="grid gap-3">
-                    <div className="alert-chip bg-cyan-cyber/10 border border-cyan-cyber/20 text-cyan-cyber">
-                      <span>Optimal throughput</span>
+                    <div className="alert-chip bg-cyan-cyber/10 text-cyan-cyber">
+                      <span>Optimal throughput : </span>
                       <strong>{Math.round(entryRate * 0.9)} ppl/min</strong>
                     </div>
-                    <div className="alert-chip bg-emerald-math/10 border border-emerald-math/20 text-emerald-math">
-                      <span>AI mitigation</span>
+                    <div className="alert-chip bg-emerald-math/10 text-emerald-math">
+                      <span>AI mitigation : </span>
                       <strong>{preventionEnabled ? 'Reactive' : 'Standby'}</strong>
                     </div>
-                    <div className="alert-chip bg-indigo-electric/10 border border-indigo-electric/20 text-indigo-electric">
-                      <span>Target refresh</span>
+                    <div className="alert-chip bg-indigo-electric/10 text-indigo-electric">
+                      <span>Target refresh : </span>
                       <strong>{fps} fps</strong>
                     </div>
                   </div>
