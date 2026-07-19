@@ -1,4 +1,4 @@
-# CrowdControl
+<c># CrowdControl </c>
 
 <p align="center">
   <img src="https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
