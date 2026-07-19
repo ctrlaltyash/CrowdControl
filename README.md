@@ -40,7 +40,7 @@ It is valuable for:
 
 ## What this project is
 
-CrowdSim is a browser-based simulation sandbox for studying crowd movement in 2D layouts.
+CrowdControl is a browser-based simulation sandbox for studying crowd movement in 2D layouts.
 
 The repo includes:
 
@@ -63,6 +63,10 @@ The interface is designed to feel more like a live control room than a static de
 - optional prevention mode that detects hazards and responds with interventions
 
 If the goal is to make crowd theory feel tangible, this project leans into that.
+
+
+<img width="1623" height="1013" alt="image" src="https://github.com/user-attachments/assets/3660427f-c948-487f-8953-b0283c8f1e69" />
+<img width="1871" height="1045" alt="image" src="https://github.com/user-attachments/assets/0726b9f4-65cd-4de5-bb08-a2b1dc585b57" />
 
 ---
 
@@ -145,6 +149,8 @@ Where:
 - cohesion = a local social/collective factor that partially offsets the risk score
 
 This means risk rises when people are crowded, slow, trapped near constrictions, and under pressure from neighboring congestion.
+
+You can check out the paper at https://doi.org/10.5281/zenodo.20362060
 
 ### 4. Mitigation logic
 
@@ -277,7 +283,7 @@ This project is currently provided as a research and exploration codebase. If yo
 
 ## Bottom line
 
-CrowdSim is a compact, visually compelling crowd-flow simulator that turns dense mathematical ideas into something you can feel, inspect, and experiment with.
+CrowdControl is a compact, visually compelling crowd-flow simulator that turns dense mathematical ideas into something you can feel, inspect, and experiment with.
 
 It is useful because it helps answer one simple but important question:
 
