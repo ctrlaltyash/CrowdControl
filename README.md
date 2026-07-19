@@ -1,4 +1,4 @@
-# CrowdSim
+# CrowdControl
 
 <p align="center">
   <img src="https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
@@ -6,9 +6,12 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/Simulation-Fluid%20Crowd%20Dynamics-8B5CF6" alt="Simulation" />
   <img src="https://img.shields.io/badge/Status-Interactive%20Prototype-10B981" alt="Status" />
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20362060.svg)](https://doi.org/10.5281/zenodo.20362060)
 </p>
 
-A high-visual, interactive crowd dynamics simulator built to help you reason about how people move, stack up, jam, and become unsafe in constrained spaces.
+Real-time PDE-based crowd simulation • Harmonic navigation fields • Autonomous mitigation • Interactive visualization
+
+https://github.com/user-attachments/assets/eb6d53f1-ed8e-4bac-9ee4-8bbdf5cdd8de
 
 This project combines a real-time spatial simulation engine, live risk telemetry, and a polished frontend to turn crowd-flow theory into something you can see, tune, and explore.
 
