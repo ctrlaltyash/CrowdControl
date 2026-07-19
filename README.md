@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/Simulation-Fluid%20Crowd%20Dynamics-8B5CF6" alt="Simulation" />
   <img src="https://img.shields.io/badge/Status-Interactive%20Prototype-10B981" alt="Status" />
-  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20362060.svg)](https://doi.org/10.5281/zenodo.20362060)
+  <img [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20362060-blue.svg)](https://doi.org/10.5281/zenodo.20362060) />
 </p>
 
 Real-time PDE-based crowd simulation • Harmonic navigation fields • Autonomous mitigation • Interactive visualization
