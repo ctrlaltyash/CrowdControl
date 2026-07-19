@@ -6,12 +6,14 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/Simulation-Fluid%20Crowd%20Dynamics-8B5CF6" alt="Simulation" />
   <img src="https://img.shields.io/badge/Status-Interactive%20Prototype-10B981" alt="Status" />
-  <img [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20362060-blue.svg)](https://doi.org/10.5281/zenodo.20362060) />
+  <a href="https://doi.org/10.5281/zenodo.20362060">
+    <img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20362060-blue.svg" alt="DOI" />
+  </a>
 </p>
 
 Real-time PDE-based crowd simulation • Harmonic navigation fields • Autonomous mitigation • Interactive visualization
 
-https://github.com/user-attachments/assets/eb6d53f1-ed8e-4bac-9ee4-8bbdf5cdd8de
+<img width="800" height="546" alt="recording_2026-07-19_22 01 34-ezgif com-speed" src="https://github.com/user-attachments/assets/28e5930b-9bb9-43ab-90cb-ef3f06ad077c" />
 
 This project combines a real-time spatial simulation engine, live risk telemetry, and a polished frontend to turn crowd-flow theory into something you can see, tune, and explore.
 
