@@ -226,27 +226,6 @@ The `generate:results` script is useful if you want to regenerate the output ana
 
 ---
 
-## Project structure
-
-```text
-src/
-  backend/
-    engine/
-      analytics.ts
-      density.ts
-      mitigation.ts
-      simulator.ts
-      solver.ts
-  frontend/
-    components/
-    App.tsx
-scripts/
-  generate-results.ts
-results/
-```
-
----
-
 ## Why this is a strong demo project
 
 This repository is especially compelling because it sits at the intersection of:
@@ -288,3 +267,6 @@ CrowdControl is a compact, visually compelling crowd-flow simulator that turns d
 It is useful because it helps answer one simple but important question:
 
 > When a space becomes unsafe, where does the danger come from, and what changes can stop it from escalating?
+
+---
+Build and Maintained by <b>Kalepu Yashvardhan</b> , feel free to reach out :)
