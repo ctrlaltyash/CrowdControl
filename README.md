@@ -226,21 +226,6 @@ The `generate:results` script is useful if you want to regenerate the output ana
 
 ---
 
-## Why this is a strong demo project
-
-This repository is especially compelling because it sits at the intersection of:
-
-- interactive simulation
-- applied mathematical modeling
-- visual analytics
-- emergency safety thinking
-- real-time control systems
-
-That combination makes it attractive not just as a coding project, but as a polished concept that can be shown to researchers, planners, educators, or anyone interested in crowd safety.
-
-It is the kind of project that instantly communicates value when someone sees the map, the heat, the risk spike, and the mitigation response happening live.
-
----
 
 ## Future directions
 
