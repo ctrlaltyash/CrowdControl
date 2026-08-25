@@ -225,33 +225,5 @@ npm run generate:results
 The `generate:results` script is useful if you want to regenerate the output analytics artifacts in the `results/` folder.
 
 ---
-
-
-## Future directions
-
-There are several interesting extensions that would make this even more powerful:
-
-- 3D visualizations for multi-level buildings and venues
-- more validated evacuation benchmark scenarios
-- policy search for optimal gate placement and flow control
-- calibration against real-world event data
-- reinforcement-learning style mitigation tuning
-
----
-
-## License
-
-This project is currently provided as a research and exploration codebase. If you plan to reuse or adapt it, please review the repository license and keep attribution where appropriate.
-
----
-
-## Bottom line
-
-CrowdControl is a compact, visually compelling crowd-flow simulator that turns dense mathematical ideas into something you can feel, inspect, and experiment with.
-
-It is useful because it helps answer one simple but important question:
-
-> When a space becomes unsafe, where does the danger come from, and what changes can stop it from escalating?
-
 ---
 Build and Maintained by <b>Kalepu Yashvardhan</b> , feel free to reach out :)
