@@ -17,27 +17,6 @@ Real-time PDE-based crowd simulation • Harmonic navigation fields • Autonomo
 
 This project combines a real-time spatial simulation engine, live risk telemetry, and a polished frontend to turn crowd-flow theory into something you can see, tune, and explore.
 
-## Why this matters
-
-Crowd safety is one of those problems that looks simple until it is not.
-
-A building entrance, a stadium tunnel, a transit platform, a festival gate, or a public plaza can appear fine on paper and still become dangerous when:
-
-- entry flow exceeds exit capacity
-- local density rises faster than people can redistribute
-- bottlenecks create compression and stagnation
-- intervention timing is too late to matter
-
-This simulator is useful because it gives you a visual and quantitative way to explore those failure modes before they happen.
-
-It is valuable for:
-
-- event and venue planning
-- emergency evacuation design review
-- crowd flow research and teaching
-- testing how gates, walls, and route changes alter risk
-- experimenting with mitigation policy in a safe, visual sandbox
-
 ## What this project is
 
 CrowdControl is a browser-based simulation sandbox for studying crowd movement in 2D layouts.
@@ -224,6 +203,6 @@ npm run generate:results
 
 The `generate:results` script is useful if you want to regenerate the output analytics artifacts in the `results/` folder.
 
----
+
 ---
 Build and Maintained by <b>Kalepu Yashvardhan</b> , feel free to reach out :)
